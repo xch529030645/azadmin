@@ -9,10 +9,10 @@ use actix_cors::Cors;
 use actix_rt::time;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
-use std::{time::Duration};
+use std::{time::Duration, fs};
 use ctrl::game_controller;
 
-use crate::ctrl::game_service::GameService;
+use crate::{ctrl::game_service::GameService, model::MysqlConfig};
 
 
 #[get("/azadmin/test")]
@@ -33,6 +33,14 @@ pub struct AppState {
 // }
 
 fn get_mysql_connect_url() -> String {
+    let data = fs::read_to_string("config.json");
+    if let Ok(v) = data {
+        let config: Result<MysqlConfig, serde_json::Error> = serde_json::from_str(v.as_str());
+        if let Ok(config) = config {
+            return format!("mysql://{}:{}@{}:{}/azadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useOldAliasMetadataBehavior=true",
+                "root",config.password,"127.0.0.1","3306");
+        }
+    }
     format!("mysql://{}:{}@{}:{}/azadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useOldAliasMetadataBehavior=true",
     "root","987123","127.0.0.1","3306")
 }

@@ -4,6 +4,11 @@ use actix_web::{Responder, web::BytesMut};
 use serde::{Deserialize, Serialize};
 use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 
+#[derive(Serialize,Deserialize)]
+pub struct MysqlConfig {
+    pub password: String,
+}
+
 
 #[derive(Serialize,Deserialize)]
 pub struct ReqLogin {
