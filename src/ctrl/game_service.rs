@@ -70,7 +70,7 @@ impl GameService {
         let today = Local::now().format("%Y-%m-%d").to_string();
         let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
         
-        let mut sql = "SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) AS active, SUM(a.iaa) AS iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, SUM(d.iaa) as first_day_iaa 
+        let mut sql = "SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, d.iaa as first_day_iaa 
         FROM ads_daily_release_reports a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
