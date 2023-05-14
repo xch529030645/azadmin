@@ -99,7 +99,7 @@ impl GameService {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
         sql += format!(" ORDER BY a.stat_datetime DESC LIMIT {}, {}", params.page * params.len, params.len).as_str();
-        // println!("{}", &sql);
+        println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
         .fetch_all(pool)
