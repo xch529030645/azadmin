@@ -93,11 +93,11 @@ impl GameService {
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
         }
-        if let Some(_) = &params.country {
-            sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
-        } else {
-            sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
-        }
+        // if let Some(_) = &params.country {
+        //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
+        // } else {
+        //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
+        // }
         sql += format!(" ORDER BY a.stat_datetime DESC LIMIT {}, {}", params.page * params.len, params.len).as_str();
         // println!("{}", &sql);
 

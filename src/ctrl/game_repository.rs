@@ -51,7 +51,38 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
         .bind(&date)
         .fetch_all(pool).await;
     match rs {
-        Ok(list) => Some(list),
+        Ok(list) => {
+            let mut ret: Vec<AdsDailyReleaseReport> = Vec::new();
+            let mut map: HashMap<String, AdsDailyReleaseReport> = HashMap::new();
+            for item in list {
+                let key = format!("{}-{}", item.package_name, item.stat_datetime);
+                if !map.contains_key(&key) {
+                    let vo = AdsDailyReleaseReport {
+                        package_name: item.package_name.clone(),
+                        stat_datetime: item.stat_datetime.clone(),
+                        cost: item.cost,
+                        active: item.active,
+                        iaa: item.iaa,
+                        country: String::from("ALL"),
+                    };
+                    map.insert(key, vo);
+                } else {
+                    let vo = map.get_mut(&key).unwrap();
+                    vo.cost += item.cost;
+                    vo.active += item.active;
+                    vo.iaa += item.iaa;
+                }
+                ret.push(item);
+            }
+
+            for k in map {
+                ret.push(k.1);
+            }
+            
+            // list.append(vo);
+            // Some(list)
+            Some(ret)
+        },
         Err(e) => {
             println!("get_ads_daily_release_reports_by_date err : {}", e);
             None
