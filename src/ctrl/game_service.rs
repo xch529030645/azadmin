@@ -501,7 +501,7 @@ impl GameService {
                     if let Some(access_token) = adv.access_token {
                         let mut page = 1;
                         loop {
-                            let page_info = self.query_ads_reports_by_token(&pool, &access_token, page, 100).await;
+                            let page_info = self.query_ads_reports_by_token(&pool, &adv.client_id, &access_token, page, 1000).await;
                             if let Some(page_info) = page_info {
                                 if page < page_info.total_page {
                                     page = page + 1;
@@ -527,7 +527,7 @@ impl GameService {
     }
 
     // #[async_recursion]
-    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, access_token: &String, page: i32, page_size: i32) -> Option<EarningPageInfo> {
+    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, client_id: &String, access_token: &String, page: i32, page_size: i32) -> Option<EarningPageInfo> {
         println!("query page {}", page);
         let today = Local::now().format("%Y-%m-%d").to_string();
         let rs = server_api::query_ads_reports_by_token(&access_token, &today, &today, page, page_size).await;
@@ -581,7 +581,7 @@ impl GameService {
                 }
 
                 if !apps.is_empty() {
-                    self.create_app_if_not_exists(pool, apps).await;
+                    self.create_app_if_not_exists(pool, client_id, apps).await;
                 }
 
                 for country_name in countries {
@@ -657,12 +657,13 @@ impl GameService {
         }
     }
 
-    async fn create_app_if_not_exists(&self, pool: &Pool<MySql>, apps: HashMap<String, String>) {
+    async fn create_app_if_not_exists(&self, pool: &Pool<MySql>, client_id: &String, apps: HashMap<String, String>) {
         for kv in apps {
-            let rs = sqlx::query("INSERT INTO apps (app_id, app_name) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM apps WHERE app_id=?)")
+            let rs = sqlx::query("INSERT INTO apps (app_id, app_name, client_id) SELECT ?,?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM apps WHERE app_id=?)")
                         .bind(&kv.0)
                         .bind(&kv.1)
                         .bind(&kv.0)
+                        .bind(client_id)
                         .execute(pool).await;
             match rs {
                 Ok(v) => {},
@@ -699,6 +700,10 @@ impl GameService {
 
     pub async fn get_countries(&self, pool: &Pool<MySql>) -> Option<Vec<Country>> {
         game_repository::get_countries(pool).await
+    }
+
+    pub async fn query_app_ids(&self, pool: &Pool<MySql>) {
+        
     }
 
     fn timestamp(&self) -> i64 {
