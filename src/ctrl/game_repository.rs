@@ -315,7 +315,7 @@ pub async fn get_one_unknown_package_name(pool: &Pool<MySql>) -> Option<UnknownP
 }
 
 pub async fn get_untry_connect_token(pool: &Pool<MySql>, package_name: &str) -> Option<Vec<ConnectToken>> {
-    let rs = sqlx::query_as::<_, ConnectToken>("SELECT * FROM ads_account aa WHERE aa.client_id NOT IN (SELECT client_id FROM unknown_package_name_except WHERE package_name=?)")
+    let rs = sqlx::query_as::<_, ConnectToken>("SELECT * FROM ads_account aa WHERE NOT ISNULL(aa.connect_client_id) AND aa.client_id NOT IN (SELECT client_id FROM unknown_package_name_except WHERE package_name=?)")
         .bind(package_name)
         .fetch_all(pool)
         .await;
