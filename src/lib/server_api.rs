@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fs};
 
 use reqwest::header::HeaderMap;
+use serde_json::from_str;
 
 use crate::model::*;
 
@@ -116,14 +117,16 @@ pub async fn get_connect_api_access_token(ads_token: &ConnectToken) -> Option<Re
     data.insert("client_secret", &ads_token.connect_client_secret);
 
 
-    let rs = client.post("https://connect-api.cloud.huawei.com/api/oauth2/v1/token").headers(headers).form(&data).send().await;
+    let rs = client.post("https://connect-api.cloud.huawei.com/api/oauth2/v1/token").headers(headers).json(&data).send().await;
     match rs {
         Ok(v) => {
-            let at = v.json::<ResAdsAccessToken>().await;
+            let txt = v.text().await.unwrap();
+            let at: Result<ResAdsAccessToken, serde_json::Error> = serde_json::from_str(&txt);
+            // let at = v.json::<ResAdsAccessToken>().await;
             match at {
                 Ok(at) => Some(at),
                 Err(e) => {
-                    println!("get_connect_api_access_token err2: {}", e);
+                    println!("get_connect_api_access_token err2: {}", &txt);
                     None
                 }
             }
