@@ -60,7 +60,7 @@ async fn main() -> std::io::Result<()> {
         .await.unwrap_or_else(|_| { std::process::exit(0) });
         let game_service = GameService::create();
 
-        let mut interval = time::interval(Duration::from_secs(60));
+        let mut interval = time::interval(Duration::from_secs(300));
         loop {
             interval.tick().await;
             game_controller::check_access_token(&pool, &game_service).await;
