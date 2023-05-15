@@ -662,8 +662,8 @@ impl GameService {
             let rs = sqlx::query("INSERT INTO apps (app_id, app_name, client_id) SELECT ?,?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM apps WHERE app_id=?)")
                         .bind(&kv.0)
                         .bind(&kv.1)
-                        .bind(&kv.0)
                         .bind(client_id)
+                        .bind(&kv.0)
                         .execute(pool).await;
             match rs {
                 Ok(v) => {},
