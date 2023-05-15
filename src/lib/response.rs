@@ -129,3 +129,21 @@ pub struct ResEarningReports {
     pub message: String,
     pub data: ResEarningReportData
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct ResAppIdRet {
+    pub code: i32,
+    pub msg: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResAppIdVo {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResAppId {
+    pub ret: ResAppIdRet,
+    pub appids: Vec<ResAppIdVo>
+}

@@ -54,6 +54,8 @@ pub struct ReqAddAdv {
 pub struct ReqAddGallery {
     pub client_id: String,
     pub client_secret: String,
+    pub connect_client_id: Option<String>,
+    pub connect_client_secret: Option<String>,
     pub remark: Option<String>
 }
 
@@ -92,7 +94,19 @@ pub struct AdminInfo {
 pub struct AdsToken {
     pub client_id: String,
     pub client_secret: String,
-    pub access_token: Option<String>
+    pub access_token: Option<String>,
+    pub connect_client_id: Option<String>,
+    pub connect_client_secret: Option<String>,
+    pub connect_access_token: Option<String>,
+}
+
+
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct ConnectToken {
+    pub client_id: String,
+    pub connect_client_id: String,
+    pub connect_client_secret: String,
+    pub connect_access_token: Option<String>,
 }
 
 #[derive(sqlx::FromRow, Deserialize, Serialize)]

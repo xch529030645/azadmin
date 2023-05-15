@@ -63,7 +63,7 @@ impl GameService {
     }
 
     pub async fn add_app_gallery(&self, pool: &Pool<MySql>, param: &ReqAddGallery) -> i32 {
-        game_repository::add_app_gallery(pool, &param.client_id, &param.client_secret, &param.remark).await
+        game_repository::add_app_gallery(pool, &param.client_id, &param.client_secret, &param.connect_client_id, &param.connect_client_secret, &param.remark).await
     }
 
     pub async fn get_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
@@ -179,6 +179,7 @@ impl GameService {
     pub async fn check_access_token(&self, pool: &Pool<MySql>) {
         self.check_market_access_token(pool).await;
         self.check_ads_access_token(pool).await;
+        self.check_connect_access_token(pool).await;
     }
 
     async fn check_market_access_token(&self, pool: &Pool<MySql>) {
@@ -227,11 +228,9 @@ impl GameService {
     }
 
     async fn check_ads_access_token(&self, pool: &Pool<MySql>) {
-        let rs = sqlx::query_as::<_, AdsToken>("SELECT client_id, client_secret, access_token from ads_account WHERE ISNULL(expire_time) OR expire_time < UNIX_TIMESTAMP()*1000")
-        .fetch_all(pool)
-        .await;
+        let rs = game_repository::get_expired_ads_token(pool).await;
         match rs {
-            Ok(list) => {
+            Some(list) => {
                 for ads_token in list {
                     let rs_token = server_api::get_ads_access_token(&ads_token).await;
                     if let Some(token) = rs_token {
@@ -239,9 +238,22 @@ impl GameService {
                     }
                 }
             },
-            Err(e) => {
-                println!("check_ads_access_token {}", e);
-            }
+            None => {}
+        }
+    }
+
+    async fn check_connect_access_token(&self, pool: &Pool<MySql>) {
+        let rs = game_repository::get_expired_connect_token(pool).await;
+        match rs {
+            Some(list) => {
+                for ads_token in list {
+                    let rs_token = server_api::get_connect_api_access_token(&ads_token).await;
+                    if let Some(token) = rs_token {
+                        self.save_connect_access_token(pool, &token, &ads_token).await;
+                    }
+                }
+            },
+            None => {}
         }
     }
 
@@ -256,6 +268,20 @@ impl GameService {
         match rs {
             Ok(_) => println!("save_ads_access_token for client {} succeed", &ads_token.client_id),
             Err(e) => println!("save_ads_access_token for client {} err: {}", &ads_token.client_id, e)
+        }
+    }
+
+    async fn save_connect_access_token(&self, pool: &Pool<MySql>, token: &ResAdsAccessToken, ads_token: &ConnectToken) {
+        println!("save_connect_access_token {}", token.access_token);
+        let expire_time = token.expires_in as i64 * 1000_i64 + self.timestamp() - 60000_i64;
+        let rs = sqlx::query("UPDATE ads_account SET connect_access_token=?, connect_expire_time=? WHERE client_id=?")
+                .bind(&token.access_token)
+                .bind(&expire_time)
+                .bind(&ads_token.client_id)
+                .execute(pool).await;
+        match rs {
+            Ok(_) => println!("save_connect_access_token for client {} succeed", &ads_token.client_id),
+            Err(e) => println!("save_connect_access_token for client {} err: {}", &ads_token.client_id, e)
         }
     }
 
@@ -306,7 +332,7 @@ impl GameService {
                             let record_date = end_date.clone();
                             actix_rt::spawn(async move {
                                 // let service = GameService::create();
-                                let app_package_names: HashSet<String> = HashSet::new();
+                                let mut app_package_names: HashSet<String> = HashSet::new();
                                 for date in days {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
                                     let mut page = 1;
@@ -322,11 +348,20 @@ impl GameService {
                                             break;
                                         }
                                     }
-                                    service.calc_release_daily_reports(&mysql, &adv_token_copy.advertiser_id, &date, &record_date).await;
+                                    service.calc_release_daily_reports(&mysql, &adv_token_copy.advertiser_id, &date, &record_date, &mut app_package_names).await;
                                 }
+
                                 
-                                // for date in days {
+                                service.save_unknown_package_names(&mysql, &app_package_names).await;
+                                // if let Some(client_id) = &adv_token_copy.client_id {
+                                //     match &adv_token_copy.access_token {
+                                //         Some(access_token) => {
+                                //             service.query_package_app_id(&mysql, client_id, access_token, &app_package_names).await;
+                                //         },
+                                //         None => {}
+                                //     }
                                 // }
+                                
                             });
                             
                         }
@@ -342,15 +377,37 @@ impl GameService {
         println!();
     }
 
-    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String) {
+    async fn save_unknown_package_names(&self, pool: &Pool<MySql>, app_package_names: &HashSet<String>) {
+        for package_name in app_package_names {
+            let is_set = game_repository::is_package_name_set(pool, package_name).await;
+            if !is_set {
+                game_repository::save_unknown_package_name(pool, package_name).await;
+            }
+        }
+        
+    }
+
+    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String, app_package_names: &mut HashSet<String>) {
         let list = game_repository::calc_ads_daily_release_reports_by_date(pool, advertiser_id, &today).await;
         if let Some(list) = list {
             for vo in list {
+                app_package_names.insert(vo.package_name.clone());
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
             }
         }
     }
 
+    async fn query_package_app_id(&self, pool: &Pool<MySql>, client_id: &String, access_token: &String, app_package_names: &HashSet<String>) {
+        for package_name in app_package_names {
+            let rs = server_api::query_package_app_id(client_id, access_token, package_name).await;
+            if let Some(rs) = rs {
+                if rs.ret.code == 0 {
+                    
+                }
+            }
+        }
+        
+    }
     
 
     
@@ -712,4 +769,6 @@ impl GameService {
             .expect("Time went backwards");
         since_the_epoch.as_secs() as i64 * 1000i64 + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64
     }
+
+    
 }

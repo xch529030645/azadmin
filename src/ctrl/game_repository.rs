@@ -187,13 +187,15 @@ pub async fn add_advertiser(pool: &Pool<MySql>, advertiser_id: &String, client_i
     }
 }
 
-pub async fn add_app_gallery(pool: &Pool<MySql>,client_id: &String, client_secret: &String, remark: &Option<String>) -> i32 {
+pub async fn add_app_gallery(pool: &Pool<MySql>,client_id: &String, client_secret: &String, connect_client_id: &String, connect_client_secret: &String, remark: &Option<String>) -> i32 {
     let rs = sqlx::query("INSERT INTO ads_account
-        (client_id, client_secret, remark)
-        VALUES(?,?,?) ON DUPLICATE KEY UPDATE client_secret=VALUES(client_secret), remark=VALUES(remark);
+        (client_id, client_secret, connect_client_id, connect_client_secret, remark)
+        VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE client_secret=VALUES(client_secret), connect_client_id=VALUES(connect_client_id), connect_client_secret=VALUES(connect_client_secret), remark=VALUES(remark);
         ")
             .bind(client_id)
             .bind(client_secret)
+            .bind(connect_client_id)
+            .bind(connect_client_secret)
             .bind(remark)
             .execute(pool).await;
         
@@ -241,6 +243,59 @@ pub async fn get_unbind_apps(pool: &Pool<MySql>) -> Option<Vec<App>> {
         Ok(list) => Some(list),
         Err(v) => {
             println!("get_apps err: {}", v);
+            None
+        }
+    }
+}
+
+pub async fn is_package_name_set(pool: &Pool<MySql>, package_name: &String) -> bool {
+    let rs = sqlx::query("SELECT 1 FROM apps WHERE package_name=?")
+            .bind(&package_name)
+            .fetch_all(pool).await;
+        
+    match rs {
+        Ok(v) => !v.is_empty(),
+        Err(e) => {
+            println!("is_package_name_set err {}", e);
+            false
+        }
+    }
+}
+
+pub async fn save_unknown_package_name(pool: &Pool<MySql>, package_name: &str) {
+    let rs = sqlx::query("INSERT INTO unknown_package_name SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unknown_package_name WHERE package_name=?)")
+        .bind(package_name)
+        .bind(package_name)
+        .execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("save_unknown_package_name err: {}", e);
+        }
+    }
+}
+
+pub async fn get_expired_ads_token(pool: &Pool<MySql>) -> Option<Vec<AdsToken>> {
+    let rs = sqlx::query_as::<_, AdsToken>("SELECT client_id, client_secret, access_token from ads_account WHERE ISNULL(expire_time) OR expire_time < UNIX_TIMESTAMP()*1000")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(list) => Some(list),
+        Err(e) => {
+            println!("get_expired_ads_token err {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_expired_connect_token(pool: &Pool<MySql>) -> Option<Vec<ConnectToken>> {
+    let rs = sqlx::query_as::<_, ConnectToken>("SELECT connect_client_id, connect_client_secret, connect_access_token from ads_account WHERE NOT ISNULL(connect_client_id) AND (ISNULL(connect_expire_time) OR connect_expire_time < UNIX_TIMESTAMP()*1000)")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(list) => Some(list),
+        Err(e) => {
+            println!("get_expired_connect_token err {}", e);
             None
         }
     }
