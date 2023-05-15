@@ -46,9 +46,10 @@ pub async fn bind_app(pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
     }
 }
 
-pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
-    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country")
+pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertiser_id: &String, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? WHERE advertiser_id=? GROUP BY package_name, stat_datetime, country")
         .bind(&date)
+        .bind(advertiser_id)
         .fetch_all(pool).await;
     match rs {
         Ok(list) => {
@@ -227,6 +228,19 @@ pub async fn get_countries(pool: &Pool<MySql>) -> Option<Vec<Country>> {
         Ok(list) => Some(list),
         Err(e) => {
             println!("get_ads_daily_release_reports_by_date err : {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_unbind_apps(pool: &Pool<MySql>) -> Option<Vec<App>> {
+    let rs = sqlx::query_as::<_, App>("SELECT * FROM apps WHERE ISNULL(package_name)")
+    .fetch_all(pool)
+    .await;
+    match rs {
+        Ok(list) => Some(list),
+        Err(v) => {
+            println!("get_apps err: {}", v);
             None
         }
     }

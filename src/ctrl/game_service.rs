@@ -306,6 +306,7 @@ impl GameService {
                             let record_date = end_date.clone();
                             actix_rt::spawn(async move {
                                 // let service = GameService::create();
+                                let app_package_names: HashSet<String> = HashSet::new();
                                 for date in days {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
                                     let mut page = 1;
@@ -321,7 +322,7 @@ impl GameService {
                                             break;
                                         }
                                     }
-                                    service.calc_release_daily_reports(&mysql, &date, &record_date).await;
+                                    service.calc_release_daily_reports(&mysql, &adv_token_copy.advertiser_id, &date, &record_date).await;
                                 }
                                 
                                 // for date in days {
@@ -341,8 +342,8 @@ impl GameService {
         println!();
     }
 
-    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, today: &String, record_date: &String) {
-        let list = game_repository::calc_ads_daily_release_reports_by_date(pool, &today).await;
+    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String) {
+        let list = game_repository::calc_ads_daily_release_reports_by_date(pool, advertiser_id, &today).await;
         if let Some(list) = list {
             for vo in list {
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
@@ -702,9 +703,7 @@ impl GameService {
         game_repository::get_countries(pool).await
     }
 
-    pub async fn query_app_ids(&self, pool: &Pool<MySql>) {
-        
-    }
+    
 
     fn timestamp(&self) -> i64 {
         let start = SystemTime::now();

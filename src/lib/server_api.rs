@@ -150,12 +150,14 @@ pub async fn query_ads_reports_by_token(access_token: &String, start_date: &Stri
     let rs = client.post("https://ads.cloud.huawei.com/openapi/monetization/reports/v1/publisher").headers(headers).json(&data).send().await;
     match rs {
         Ok(v) => {
+            let txt = v.text().await.unwrap();
+            let at: Result<ResEarningReports, serde_json::Error> = serde_json::from_str(txt.as_str());
             // println!("query_reports res {:?}", v.text().await.unwrap());
-            let at = v.json::<ResEarningReports>().await;
+            // let at = v.json::<ResEarningReports>().await;
             match at {
                 Ok(at) => Some(at),
                 Err(e) => {
-                    println!("query_ads_reports_by_token err: {}", e);
+                    println!("query_ads_reports_by_token err: {}", txt);
                     None
                 }
             }
@@ -166,3 +168,34 @@ pub async fn query_ads_reports_by_token(access_token: &String, start_date: &Stri
         }
     }
 }
+
+
+// pub async fn query_ads_reports_by_token(access_token: &String, start_date: &String, end_date: &String, page: i32, page_size: i32) -> Option<ResEarningReports> {
+//     let client = reqwest::Client::new();
+//     let mut headers = HeaderMap::new();
+//     headers.insert("Content-Type", "application/json".parse().unwrap());
+//     headers.insert("Authorization", ("Bearer ".to_string()+access_token).parse().unwrap());
+
+//     let mut data = ReqQueryAdEarningReport::create(page, page_size, start_date, end_date);
+//     data.add_filter("currency", "USD");
+
+
+//     let rs = client.post("https://ads.cloud.huawei.com/openapi/monetization/reports/v1/publisher").headers(headers).json(&data).send().await;
+//     match rs {
+//         Ok(v) => {
+//             // println!("query_reports res {:?}", v.text().await.unwrap());
+//             let at = v.json::<ResEarningReports>().await;
+//             match at {
+//                 Ok(at) => Some(at),
+//                 Err(e) => {
+//                     println!("query_ads_reports_by_token err: {}", e);
+//                     None
+//                 }
+//             }
+//         },
+//         Err(e) => {
+//             println!("query_ads_reports_by_token err: {}", e);
+//             None
+//         }
+//     }
+// }

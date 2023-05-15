@@ -164,7 +164,8 @@ pub struct App {
     pub app_name: String,
     pub app_id: String,
     pub icon: Option<String>,
-    pub package_name: Option<String>
+    pub package_name: Option<String>,
+    pub client_id: String
 }
 
 
