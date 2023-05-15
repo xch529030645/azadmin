@@ -47,7 +47,7 @@ pub async fn bind_app(pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
 }
 
 pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertiser_id: &String, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
-    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? WHERE advertiser_id=? GROUP BY package_name, stat_datetime, country")
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country WHERE advertiser_id=?")
         .bind(&date)
         .bind(advertiser_id)
         .fetch_all(pool).await;
