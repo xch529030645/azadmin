@@ -310,7 +310,7 @@ impl GameService {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
                                     let mut page = 1;
                                     loop {
-                                        let page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page, 100).await;
+                                        let page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page, 1000).await;
                                         if let Some(page_info) = page_info {
                                             if page < page_info.total_page {
                                                 page = page + 1;
