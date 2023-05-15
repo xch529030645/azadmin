@@ -300,3 +300,74 @@ pub async fn get_expired_connect_token(pool: &Pool<MySql>) -> Option<Vec<Connect
         }
     }
 }
+
+pub async fn get_one_unknown_package_name(pool: &Pool<MySql>) -> Option<UnknownPackageName> {
+    let rs = sqlx::query_as::<_, UnknownPackageName>("SELECT * from unknown_package_name LIMIT 1")
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(list) => Some(list),
+        Err(e) => {
+            println!("get_expired_connect_token err {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_untry_connect_token(pool: &Pool<MySql>, package_name: &str) -> Option<Vec<ConnectToken>> {
+    let rs = sqlx::query_as::<_, ConnectToken>("SELECT * FROM ads_account aa WHERE aa.client_id NOT IN (SELECT client_id FROM unknown_package_name_except WHERE package_name=?)")
+        .bind(package_name)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(list) => Some(list),
+        Err(e) => {
+            println!("get_untry_connect_token err {}", e);
+            None
+        }
+    }
+    
+}
+
+pub async fn add_package_name_except_client_id(pool: &Pool<MySql>, connect_client_id: &str, package_name: &str) {
+    let rs = sqlx::query("INSERT INTO unknown_package_name_except (package_name, client_id) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM unknown_package_name_except WHERE package_name=? AND client_id=?)")
+        .bind(package_name)
+        .bind(connect_client_id)
+        .bind(package_name)
+        .bind(connect_client_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("add_package_name_except_client_id err {}", e);
+        }
+    }
+}
+
+pub async fn update_app_package_name(pool: &Pool<MySql>, app_id: &str, package_name: &str) {
+    let rs = sqlx::query("UPDATE apps SET package_name=? WHERE app_id=?")
+        .bind(package_name)
+        .bind(app_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("update_app_package_name err {}", e);
+        }
+    }
+}
+
+pub async fn remove_unknown_package_name(pool: &Pool<MySql>, package_name: &str) {
+    let rs = sqlx::query("DELETE FROM unknown_package_name WHERE package_name=?")
+        .bind(package_name)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("remove_unknown_package_name err {}", e);
+        }
+    }
+}

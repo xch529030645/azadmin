@@ -60,13 +60,19 @@ async fn main() -> std::io::Result<()> {
         .await.unwrap_or_else(|_| { std::process::exit(0) });
         let game_service = GameService::create();
 
-        let mut interval = time::interval(Duration::from_secs(300));
+        let mut interval = time::interval(Duration::from_secs(60));
+        let mut task_interval_1 = 2;
         loop {
             interval.tick().await;
-            game_controller::check_access_token(&pool, &game_service).await;
-            game_controller::query_reports(&pool, &game_service).await;
-            game_controller::query_ads_reports(&pool, &game_service).await;
-            game_controller::query_last_90_release_reports(&pool, &game_service).await;
+            task_interval_1 = task_interval_1 - 1;
+            if task_interval_1 == 0 {
+                task_interval_1 = 5;
+                game_controller::check_access_token(&pool, &game_service).await;
+                game_controller::query_reports(&pool, &game_service).await;
+                game_controller::query_ads_reports(&pool, &game_service).await;
+                game_controller::query_last_90_release_reports(&pool, &game_service).await;
+            }
+            game_controller::check_package_app_id(&pool, &game_service).await
         }
     });
 

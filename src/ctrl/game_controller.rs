@@ -129,3 +129,7 @@ pub async fn query_ads_reports(pool: &Pool<MySql>, game_service:&GameService) {
 pub async fn query_last_90_release_reports(pool: &Pool<MySql>, game_service:&GameService) {
     game_service.query_last_90_release_reports(pool).await;
 }
+
+pub async fn check_package_app_id(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.check_package_app_id(pool).await;
+}

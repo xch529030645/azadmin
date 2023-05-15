@@ -397,17 +397,17 @@ impl GameService {
         }
     }
 
-    async fn query_package_app_id(&self, pool: &Pool<MySql>, client_id: &String, access_token: &String, app_package_names: &HashSet<String>) {
-        for package_name in app_package_names {
-            let rs = server_api::query_package_app_id(client_id, access_token, package_name).await;
-            if let Some(rs) = rs {
-                if rs.ret.code == 0 {
+    // async fn query_package_app_id(&self, pool: &Pool<MySql>, client_id: &String, access_token: &String, app_package_names: &HashSet<String>) {
+    //     for package_name in app_package_names {
+    //         let rs = server_api::query_package_app_id(client_id, access_token, package_name).await;
+    //         if let Some(rs) = rs {
+    //             if rs.ret.code == 0 {
                     
-                }
-            }
-        }
+    //             }
+    //         }
+    //     }
         
-    }
+    // }
     
 
     
@@ -768,6 +768,46 @@ impl GameService {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
         since_the_epoch.as_secs() as i64 * 1000i64 + (since_the_epoch.subsec_nanos() as f64 / 1_000_000.0) as i64
+    }
+
+    pub async fn check_package_app_id(&self, pool: &Pool<MySql>) {
+        let rs = game_repository::get_one_unknown_package_name(pool).await;
+        if let Some(pkg) = rs {
+            let accounts = game_repository::get_untry_connect_token(pool, &pkg.package_name).await;
+            if let Some(accounts) = accounts {
+                for account in accounts {
+                    let package_name = pkg.package_name.clone();
+                    let mysql = pool.clone();
+                    let service = self.clone();
+                    let account_copy = account.clone();
+                    actix_rt::spawn(async move {
+                        service.get_app_id_by_package_name(&mysql, &package_name, &account_copy).await
+                    });
+                }
+            }
+            // pkg.package_name
+        }
+    }
+
+    async fn get_app_id_by_package_name(&self, pool: &Pool<MySql>, package_name: &String, account: &ConnectToken) {
+        if let Some(access_token) = &account.connect_access_token {
+            let rs = server_api::query_package_app_id(&account.connect_client_id, access_token, package_name).await;
+            if let Some(rs) = rs {
+                if rs.ret.code == 0 {
+                    if rs.appids.is_empty() {
+                        game_repository::add_package_name_except_client_id(pool, &account.connect_client_id, package_name).await;
+                    } else {
+                        let vo = rs.appids.first();
+                        if let Some(vo) = vo {
+                            let app_id = &vo.value;
+                            game_repository::update_app_package_name(pool, app_id, package_name).await;
+                            game_repository::remove_unknown_package_name(pool, package_name).await;
+                        }
+                    }
+                }
+            }
+        }
+        
     }
 
     

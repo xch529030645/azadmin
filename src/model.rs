@@ -101,7 +101,7 @@ pub struct AdsToken {
 }
 
 
-#[derive(sqlx::FromRow, Deserialize, Serialize)]
+#[derive(sqlx::FromRow, Deserialize, Serialize, Clone)]
 pub struct ConnectToken {
     pub client_id: String,
     pub connect_client_id: String,
@@ -186,6 +186,11 @@ pub struct App {
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
 pub struct Country {
     pub name: String,
+}
+
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct UnknownPackageName {
+    pub package_name: String,
 }
 
 
