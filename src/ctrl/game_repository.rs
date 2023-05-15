@@ -187,7 +187,7 @@ pub async fn add_advertiser(pool: &Pool<MySql>, advertiser_id: &String, client_i
     }
 }
 
-pub async fn add_app_gallery(pool: &Pool<MySql>,client_id: &String, client_secret: &String, connect_client_id: &String, connect_client_secret: &String, remark: &Option<String>) -> i32 {
+pub async fn add_app_gallery(pool: &Pool<MySql>,client_id: &String, client_secret: &String, connect_client_id: &Option<String>, connect_client_secret: &Option<String>, remark: &Option<String>) -> i32 {
     let rs = sqlx::query("INSERT INTO ads_account
         (client_id, client_secret, connect_client_id, connect_client_secret, remark)
         VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE client_secret=VALUES(client_secret), connect_client_id=VALUES(connect_client_id), connect_client_secret=VALUES(connect_client_secret), remark=VALUES(remark);
