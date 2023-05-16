@@ -868,7 +868,10 @@ impl GameService {
                     game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
                 }
 
-                
+                let rs = umeng_api::get_duration(&app.appkey, end_date).await;
+                if let Some(rs) = rs {
+                    game_repository::save_app_umeng_duration(pool, &app.appkey, end_date, rs.average).await;
+                }
             }
         }
         println!("query_last_30_umeng_retentions use {}", self.timestamp() - now);
