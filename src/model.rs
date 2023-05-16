@@ -199,6 +199,45 @@ pub struct UnknownPackageName {
 }
 
 
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct UMApp {
+    pub name: String,
+    pub appkey: String,
+    pub package_name: Option<String>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUMAppList {
+    pub totalPage: i32,
+    pub page: i32,
+    pub appInfos: Vec<UMApp>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct RetentionInfo {
+    pub date: String,
+    pub totalInstallUser: i32,
+    pub retentionRate: Vec<f32>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResRetentionInfo {
+    pub retentionInfo: Vec<RetentionInfo>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUseDuration {
+    pub average: i32
+}
+
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct UMRetentionApp {
+    pub appkey: String,
+    pub date: String,
+}
+
+
+
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {
     pub err: i32,

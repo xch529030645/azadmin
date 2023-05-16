@@ -2,7 +2,7 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::
 use chrono::{Local, DateTime, Days};
 use sqlx::{Pool, MySql, Row};
 
-use crate::{lib::{server_api, req::{AuthorizationCode}, response::*}, model::*, auth};
+use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth};
 
 use super::game_repository;
 // use async_recursion::async_recursion;
@@ -821,6 +821,71 @@ impl GameService {
                 }
             }
         }
+    }
+
+    pub async fn query_umeng_apps(&self, pool: &Pool<MySql>) {
+        let mut page = 1;
+        let mut apps: Vec<UMApp> = vec![];
+        loop {
+            let rs = umeng_api::get_app_list(page).await;
+            if let Some(mut rs) = rs {
+                apps.append(&mut rs.appInfos);
+                if page < rs.totalPage {
+                    page = page + 1;
+                } else {
+                    break
+                }
+            } else {
+                break
+            }
+        }
+
+        let now = self.timestamp();
+        for app in apps {
+            game_repository::save_um_apps(pool, &app.appkey, &app.name).await;
+        }
+        println!("insert_umeng_apps use {}", self.timestamp() - now);
+    }
+
+    pub async fn query_last_30_umeng_retentions(&self, pool: &Pool<MySql>) {
+        let end = Local::now().checked_sub_days(Days::new(1)).unwrap();
+        let start = end.checked_sub_days(Days::new(30)).unwrap();
+        let start_date = &start.format("%Y-%m-%d").to_string();
+        let end_date = &end.format("%Y-%m-%d").to_string();
+
+        // let ret = end.checked_sub_days(Days::new(1)).unwrap();
+        // let ret_date = &ret.format("%Y-%m-%d").to_string();
+
+        let now = self.timestamp();
+
+        let apps = game_repository::get_um_apps_with_package_name(pool).await;
+        if let Some(apps) = apps {
+            for app in apps {
+                let rs = umeng_api::get_retentions(&app.appkey, start_date, end_date).await;
+                if let Some(info_list) = rs {
+                    game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
+                }
+
+                
+            }
+        }
+        println!("query_last_30_umeng_retentions use {}", self.timestamp() - now);
+
+    }
+
+    pub async fn query_umeng_duration(&self, pool: &Pool<MySql>) {
+        let now = self.timestamp();
+
+        let rs = game_repository::get_umeng_app_without_duration(pool).await;
+        if let Some(rs) = rs {
+            for app in rs {
+                let rs = umeng_api::get_duration(&app.appkey, &app.date).await;
+                if let Some(rs) = rs {
+                    game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+                }
+            }
+        }
+        println!("query_umeng_duration use {}", self.timestamp() - now);
     }
     
 }

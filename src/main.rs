@@ -67,12 +67,15 @@ async fn main() -> std::io::Result<()> {
             task_interval_1 = task_interval_1 - 1;
             if task_interval_1 == 0 {
                 task_interval_1 = 5;
-                game_controller::check_access_token(&pool, &game_service).await;
-                game_controller::query_reports(&pool, &game_service).await;
-                game_controller::query_ads_reports(&pool, &game_service).await;
-                game_controller::query_last_90_release_reports(&pool, &game_service).await;
+                // game_controller::check_access_token(&pool, &game_service).await;
+                // game_controller::query_reports(&pool, &game_service).await;
+                // game_controller::query_ads_reports(&pool, &game_service).await;
+                // game_controller::query_last_90_release_reports(&pool, &game_service).await;
+                game_controller::query_umeng_apps(&pool, &game_service).await;
+                game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
+                game_controller::query_umeng_duration(&pool, &game_service).await;
             }
-            game_controller::check_package_app_id(&pool, &game_service).await
+            // game_controller::check_package_app_id(&pool, &game_service).await
         }
     });
 
@@ -80,6 +83,7 @@ async fn main() -> std::io::Result<()> {
     // 密钥: 9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54
     // https://dat.311419.cn/azadmin/auth
     // 
+
 
     HttpServer::new(move || {
         let cors = Cors::default()

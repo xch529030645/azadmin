@@ -377,3 +377,104 @@ pub async fn remove_unknown_package_name(pool: &Pool<MySql>, package_name: &str)
         }
     }
 }
+
+pub async fn save_um_apps(pool: &Pool<MySql>, appkey: &str, name: &str) {
+    let rs = sqlx::query("INSERT INTO um_apps (appkey, `name`) VALUES (?,?) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`)")
+        .bind(appkey)
+        .bind(name)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("save_um_apps err {}", e);
+        }
+    }
+}
+
+pub async fn get_um_apps_with_package_name(pool: &Pool<MySql>) -> Option<Vec<UMApp>>  {
+    let rs = sqlx::query_as::<_, UMApp>("SELECT * FROM um_apps WHERE NOT ISNULL(package_name)")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(e) => Some(e),
+        Err(e) => {
+            println!("get_um_apps_with_package_name err {}", e);
+            None
+        }
+    }
+}
+
+pub async fn save_app_umeng_retention(pool: &Pool<MySql>, appkey: &String, infos: &Vec<RetentionInfo>) {
+    let mut sql = String::from("INSERT INTO um_retention (appkey, date, install, r1, r2, r3, r4, r5, r6, r7, r15, r30) VALUES ");
+    let mut vs = vec![];
+    for _ in infos {
+        vs.push("(?,?,?,?,?,?,?,?,?,?,?,?)");
+    }
+
+    sql = sql + vs.join(",").as_str();
+    sql += " ON DUPLICATE KEY UPDATE install=VALUES(install), r1=VALUES(r1), r2=VALUES(r2), r3=VALUES(r3), r4=VALUES(r4), r5=VALUES(r5), r6=VALUES(r6), r7=VALUES(r7), r15=VALUES(r15), r30=VALUES(r30)";
+    
+
+    let mut query = sqlx::query(sql.as_str());
+    for info in infos {
+        let r1 = info.retentionRate.get(0);
+        let r2 = info.retentionRate.get(1);
+        let r3 = info.retentionRate.get(2);
+        let r4 = info.retentionRate.get(3);
+        let r5 = info.retentionRate.get(4);
+        let r6 = info.retentionRate.get(5);
+        let r7 = info.retentionRate.get(6);
+        let r15 = info.retentionRate.get(7);
+        let r30 = info.retentionRate.get(8);
+        query = query.bind(appkey)
+            .bind(&info.date)
+            .bind(&info.totalInstallUser)
+            .bind(r1)
+            .bind(r2)
+            .bind(r3)
+            .bind(r4)
+            .bind(r5)
+            .bind(r6)
+            .bind(r7)
+            .bind(r15)
+            .bind(r30);
+    };
+
+    let rs = query.execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("save_um_apps err {}", e);
+        }
+    }
+}
+
+pub async fn save_app_umeng_duration(pool: &Pool<MySql>, appkey: &str, date: &str, average: i32) {
+    let rs = sqlx::query("INSERT INTO um_retention (appkey, date, duration) VALUES (?,?,?) ON DUPLICATE KEY UPDATE duration=VALUES(duration)")
+        .bind(appkey)
+        .bind(date)
+        .bind(average)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(e) => {},
+        Err(e) => {
+            println!("save_app_umeng_duration err {}", e);
+        }
+    }
+}
+
+pub async fn get_umeng_app_without_duration(pool: &Pool<MySql>) -> Option<Vec<UMRetentionApp>> {
+    let rs = sqlx::query_as::<_, UMRetentionApp>("SELECT appkey, `date` FROM um_retention WHERE ISNULL(duration)")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(e) => Some(e),
+        Err(e) => {
+            println!("save_app_umeng_duration err {}", e);
+            None
+        }
+    }
+}

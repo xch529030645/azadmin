@@ -133,3 +133,15 @@ pub async fn query_last_90_release_reports(pool: &Pool<MySql>, game_service:&Gam
 pub async fn check_package_app_id(pool: &Pool<MySql>, game_service: &GameService) {
     game_service.check_package_app_id(pool).await;
 }
+
+pub async fn query_umeng_apps(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.query_umeng_apps(pool).await;
+}
+
+pub async fn query_last_30_umeng_retentions(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.query_last_30_umeng_retentions(pool).await;
+}
+
+pub async fn query_umeng_duration(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.query_umeng_duration(pool).await;
+}
