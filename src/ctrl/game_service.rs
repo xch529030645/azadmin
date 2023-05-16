@@ -432,9 +432,29 @@ impl GameService {
             if let Some(reports) = rs {
                 if reports.code == "0" {
                     // let mut sqls = Vec::<String>::new();
-                    let now = self.timestamp();
                     if let Some(data) = reports.data {
+                        let now = self.timestamp();
                         for vo in data.list {
+                            if vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<i32>().unwrap() == 0 
+                                && vo.thousand_show_cost.parse::<i32>().unwrap() == 0 && vo.cost.parse::<i32>().unwrap() == 0 
+                                && vo.download_count == 0 && vo.download_cost.parse::<i32>().unwrap() == 0 
+                                && vo.install_count == 0 && vo.install_cost.parse::<i32>().unwrap() == 0 
+                                && vo.active_count_normalized == 0 && vo.active_cost_normalized.parse::<i32>().unwrap() == 0 
+                                && vo.register_count == 0 && vo.register_cost.parse::<i32>().unwrap() == 0 
+                                && vo.retain_count_normalized == 0 && vo.retain_cost_normalized.parse::<i32>().unwrap() == 0 
+                                && vo.three_day_retain_count == 0 && vo.three_day_retain_cost.parse::<i32>().unwrap() == 0 
+                                && vo.subscribe_count == 0 && vo.subscribe_cost.parse::<i32>().unwrap() == 0 
+                                && vo.seven_day_retain_count == 0 && vo.seven_day_retain_cost.parse::<i32>().unwrap() == 0 
+                                && vo.publisher_real_price_one_day.parse::<i32>().unwrap() == 0 && vo.ad_income_one_day_ltv_hms.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_two_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_three_day_ltv_hms.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_seven_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_fifteen_day_ltv_hms.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_thirty_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_one_day_roi.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_two_day_roi.parse::<i32>().unwrap() == 0 && vo.ad_income_three_day_roi.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_seven_day_roi.parse::<i32>().unwrap() == 0 && vo.ad_income_fifteen_day_roi.parse::<i32>().unwrap() == 0 
+                                && vo.ad_income_thirty_day_roi.parse::<i32>().unwrap() == 0 && vo.attribution_income_iaa.parse::<i32>().unwrap() == 0 
+                                && vo.attribution_income_iap_normalized.parse::<i32>().unwrap() == 0 {
+                                continue;
+                            }
                             let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
                             let sql = "INSERT INTO azadmin.reports
                             (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, show_count, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
