@@ -67,15 +67,15 @@ async fn main() -> std::io::Result<()> {
             task_interval_1 = task_interval_1 - 1;
             if task_interval_1 == 0 {
                 task_interval_1 = 5;
-                // game_controller::check_access_token(&pool, &game_service).await;
-                // game_controller::query_reports(&pool, &game_service).await;
-                // game_controller::query_ads_reports(&pool, &game_service).await;
-                // game_controller::query_last_90_release_reports(&pool, &game_service).await;
+                game_controller::check_access_token(&pool, &game_service).await;
+                game_controller::query_reports(&pool, &game_service).await;
+                game_controller::query_ads_reports(&pool, &game_service).await;
+                game_controller::query_last_90_release_reports(&pool, &game_service).await;
                 game_controller::query_umeng_apps(&pool, &game_service).await;
                 game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
                 game_controller::query_umeng_duration(&pool, &game_service).await;
             }
-            // game_controller::check_package_app_id(&pool, &game_service).await
+            game_controller::check_package_app_id(&pool, &game_service).await
         }
     });
 
