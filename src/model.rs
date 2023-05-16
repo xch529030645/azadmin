@@ -115,8 +115,8 @@ pub struct AppGallery {
     pub client_secret: String,
     pub access_token: Option<String>,
     pub remark: Option<String>,
-    pub connect_client_id: String,
-    pub connect_client_secret: String,
+    pub connect_client_id: Option<String>,
+    pub connect_client_secret: Option<String>,
     pub connect_access_token: Option<String>,
 }
 
