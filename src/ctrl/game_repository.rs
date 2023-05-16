@@ -97,47 +97,100 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
     }
 }
 
+async fn is_release_report_exists(pool: &Pool<MySql>, package_name: &String, stat_datetime: &String, country: &String, record_datetime: &String) -> bool {
+    let rs = sqlx::query("SELECT 1 FROM ads_daily_release_reports WHERE package_name=? AND stat_datetime=? AND country=? AND record_datetime=?")
+        .bind(package_name)
+        .bind(stat_datetime)
+        .bind(country)
+        .bind(record_datetime)
+        .execute(pool).await;
+    match rs {
+        Ok(_) => true,
+        Err(_) => false
+    }
+}
+
 pub async fn insert_or_update_daily_release_report(pool: &Pool<MySql>, vo: &AdsDailyReleaseReport, record_date: &String) {
     // let today = Local::now().format("%Y-%m-%d").to_string();
-    let rs = sqlx::query("UPDATE ads_daily_release_reports
-    SET cost=?, active=?, iaa=? WHERE package_name=? AND stat_datetime=? AND record_datetime=? AND country=?")
-        .bind(&vo.cost)
-        .bind(&vo.active)
-        .bind(&vo.iaa)
-        .bind(&vo.package_name)
-        .bind(&vo.stat_datetime)
-        .bind(record_date)
-        .bind(&vo.country)
-        .execute(pool).await;
-
-    match rs {
-        Ok(v) => {
-            if v.rows_affected() == 0 {
-                let rs = sqlx::query("INSERT INTO ads_daily_release_reports
-                (package_name, cost, active, iaa, stat_datetime, record_datetime, country)
-                VALUES(?,?,?,?,?,?,?);
-                ")
-                    .bind(&vo.package_name)
-                    .bind(&vo.cost)
-                    .bind(&vo.active)
-                    .bind(&vo.iaa)
-                    .bind(&vo.stat_datetime)
-                    .bind(record_date)
-                    .bind(&vo.country)
-                    .execute(pool).await;
-                
-                match rs {
-                    Ok(v) => {},
-                    Err(e) => {
-                        println!("insert ads_daily_release_reports err {}", e);
-                    }
+    let is_exists = is_release_report_exists(pool, &vo.package_name, &vo.stat_datetime, &vo.country, record_date).await;
+    if is_exists {
+        let rs = sqlx::query("UPDATE ads_daily_release_reports
+        SET cost=?, active=?, iaa=? WHERE package_name=? AND stat_datetime=? AND record_datetime=? AND country=?")
+            .bind(&vo.cost)
+            .bind(&vo.active)
+            .bind(&vo.iaa)
+            .bind(&vo.package_name)
+            .bind(&vo.stat_datetime)
+            .bind(record_date)
+            .bind(&vo.country)
+            .execute(pool).await;
+        match rs {
+            Ok(v) => {},
+            Err(e) => {
+                println!("insert_or_update_daily_release_report err {}", e);
+            }
+        }
+    } else {
+        let rs = sqlx::query("INSERT INTO ads_daily_release_reports
+            (package_name, cost, active, iaa, stat_datetime, record_datetime, country)
+            VALUES(?,?,?,?,?,?,?);
+            ")
+                .bind(&vo.package_name)
+                .bind(&vo.cost)
+                .bind(&vo.active)
+                .bind(&vo.iaa)
+                .bind(&vo.stat_datetime)
+                .bind(record_date)
+                .bind(&vo.country)
+                .execute(pool).await;
+            
+            match rs {
+                Ok(v) => {},
+                Err(e) => {
+                    println!("insert ads_daily_release_reports err {}", e);
                 }
             }
-        },
-        Err(e) => {
-            println!("insert_or_update_daily_release_report err {}", e);
-        }
     }
+
+    // let rs = sqlx::query("UPDATE ads_daily_release_reports
+    // SET cost=?, active=?, iaa=? WHERE package_name=? AND stat_datetime=? AND record_datetime=? AND country=?")
+    //     .bind(&vo.cost)
+    //     .bind(&vo.active)
+    //     .bind(&vo.iaa)
+    //     .bind(&vo.package_name)
+    //     .bind(&vo.stat_datetime)
+    //     .bind(record_date)
+    //     .bind(&vo.country)
+    //     .execute(pool).await;
+
+    // match rs {
+    //     Ok(v) => {
+    //         if v.rows_affected() == 0 {
+    //             let rs = sqlx::query("INSERT INTO ads_daily_release_reports
+    //             (package_name, cost, active, iaa, stat_datetime, record_datetime, country)
+    //             VALUES(?,?,?,?,?,?,?);
+    //             ")
+    //                 .bind(&vo.package_name)
+    //                 .bind(&vo.cost)
+    //                 .bind(&vo.active)
+    //                 .bind(&vo.iaa)
+    //                 .bind(&vo.stat_datetime)
+    //                 .bind(record_date)
+    //                 .bind(&vo.country)
+    //                 .execute(pool).await;
+                
+    //             match rs {
+    //                 Ok(v) => {},
+    //                 Err(e) => {
+    //                     println!("insert ads_daily_release_reports err {}", e);
+    //                 }
+    //             }
+    //         }
+    //     },
+    //     Err(e) => {
+    //         println!("insert_or_update_daily_release_report err {}", e);
+    //     }
+    // }
 }
 
 
