@@ -23,7 +23,9 @@ pub struct ReqQueryReports {
     pub end_date: Option<String>,
     pub country: Option<String>,
     pub page: i32,
-    pub len: i32
+    pub len: i32,
+    pub order_prop: Option<String>,
+    pub order: Option<String>
 }
 
 #[derive(Serialize,Deserialize)]

@@ -57,6 +57,9 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertis
             let mut map: HashMap<String, AdsDailyReleaseReport> = HashMap::new();
             for item in list {
                 let key = format!("{}-{}", item.package_name, item.stat_datetime);
+                if item.package_name.eq("com.onlinepet.huawei") {
+                    println!("{} {} {}", item.package_name, item.country, item.cost);
+                }
                 if !map.contains_key(&key) {
                     let vo = AdsDailyReleaseReport {
                         package_name: item.package_name.clone(),
@@ -68,7 +71,7 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertis
                     };
                     map.insert(key, vo);
                 } else {
-                    let vo = map.get_mut(&key).unwrap();
+                    let vo: &mut AdsDailyReleaseReport = map.get_mut(&key).unwrap();
                     vo.cost += item.cost;
                     vo.active += item.active;
                     vo.iaa += item.iaa;
@@ -77,6 +80,10 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertis
             }
 
             for k in map {
+                if k.1.package_name.eq("com.onlinepet.huawei") {
+                    println!("total {} {} {}", &k.1.package_name, &k.1.country, &k.1.cost);
+                }
+                // println!("total cost : {} - {}", advertiser_id, &k.1.cost);
                 ret.push(k.1);
             }
             

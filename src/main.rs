@@ -61,7 +61,7 @@ async fn main() -> std::io::Result<()> {
         let game_service = GameService::create();
 
         let mut interval = time::interval(Duration::from_secs(60));
-        let mut task_interval_1 = 2;
+        let mut task_interval_1 = 1;
         loop {
             interval.tick().await;
             task_interval_1 = task_interval_1 - 1;
