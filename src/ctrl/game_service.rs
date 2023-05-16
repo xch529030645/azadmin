@@ -435,24 +435,24 @@ impl GameService {
                     if let Some(data) = reports.data {
                         let now = self.timestamp();
                         for vo in data.list {
-                            if vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<i32>().unwrap() == 0 
-                                && vo.thousand_show_cost.parse::<i32>().unwrap() == 0 && vo.cost.parse::<i32>().unwrap() == 0 
-                                && vo.download_count == 0 && vo.download_cost.parse::<i32>().unwrap() == 0 
-                                && vo.install_count == 0 && vo.install_cost.parse::<i32>().unwrap() == 0 
-                                && vo.active_count_normalized == 0 && vo.active_cost_normalized.parse::<i32>().unwrap() == 0 
-                                && vo.register_count == 0 && vo.register_cost.parse::<i32>().unwrap() == 0 
-                                && vo.retain_count_normalized == 0 && vo.retain_cost_normalized.parse::<i32>().unwrap() == 0 
-                                && vo.three_day_retain_count == 0 && vo.three_day_retain_cost.parse::<i32>().unwrap() == 0 
-                                && vo.subscribe_count == 0 && vo.subscribe_cost.parse::<i32>().unwrap() == 0 
-                                && vo.seven_day_retain_count == 0 && vo.seven_day_retain_cost.parse::<i32>().unwrap() == 0 
-                                && vo.publisher_real_price_one_day.parse::<i32>().unwrap() == 0 && vo.ad_income_one_day_ltv_hms.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_two_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_three_day_ltv_hms.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_seven_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_fifteen_day_ltv_hms.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_thirty_day_ltv_hms.parse::<i32>().unwrap() == 0 && vo.ad_income_one_day_roi.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_two_day_roi.parse::<i32>().unwrap() == 0 && vo.ad_income_three_day_roi.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_seven_day_roi.parse::<i32>().unwrap() == 0 && vo.ad_income_fifteen_day_roi.parse::<i32>().unwrap() == 0 
-                                && vo.ad_income_thirty_day_roi.parse::<i32>().unwrap() == 0 && vo.attribution_income_iaa.parse::<i32>().unwrap() == 0 
-                                && vo.attribution_income_iap_normalized.parse::<i32>().unwrap() == 0 {
+                            if vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<f32>().unwrap() == 0_f32 
+                                && vo.thousand_show_cost.parse::<f32>().unwrap() == 0_f32 && vo.cost.parse::<f32>().unwrap() == 0_f32
+                                && vo.download_count == 0 && vo.download_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.install_count == 0 && vo.install_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.active_count_normalized == 0 && vo.active_cost_normalized.parse::<f32>().unwrap() == 0_f32 
+                                && vo.register_count == 0 && vo.register_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.retain_count_normalized == 0 && vo.retain_cost_normalized.parse::<f32>().unwrap() == 0_f32 
+                                && vo.three_day_retain_count == 0 && vo.three_day_retain_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.subscribe_count == 0 && vo.subscribe_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.seven_day_retain_count == 0 && vo.seven_day_retain_cost.parse::<f32>().unwrap() == 0_f32 
+                                && vo.publisher_real_price_one_day.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_one_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_two_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_three_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_seven_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_fifteen_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_thirty_day_ltv_hms.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_one_day_roi.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_two_day_roi.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_three_day_roi.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_seven_day_roi.parse::<f32>().unwrap() == 0_f32 && vo.ad_income_fifteen_day_roi.parse::<f32>().unwrap() == 0_f32 
+                                && vo.ad_income_thirty_day_roi.parse::<f32>().unwrap() == 0_f32 && vo.attribution_income_iaa.parse::<f32>().unwrap() == 0_f32 
+                                && vo.attribution_income_iap_normalized.parse::<f32>().unwrap() == 0_f32 {
                                 continue;
                             }
                             let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
