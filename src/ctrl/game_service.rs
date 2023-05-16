@@ -406,6 +406,9 @@ impl GameService {
         if let Some(list) = list {
             for vo in list {
                 app_package_names.insert(vo.package_name.clone());
+                if vo.cost == 0_f64 && vo.active == 0 && vo.iaa == 0_f64 {
+                    continue;
+                }
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
             }
         }
