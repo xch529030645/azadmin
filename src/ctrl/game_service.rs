@@ -400,7 +400,7 @@ impl GameService {
     }
 
     async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String, app_package_names: &mut HashSet<String>) {
-        let list = game_repository::calc_ads_daily_release_reports_by_date(pool, advertiser_id, &today).await;
+        let list = game_repository::calc_ads_daily_release_reports_by_date(pool, &today).await;
         if let Some(list) = list {
             for vo in list {
                 app_package_names.insert(vo.package_name.clone());

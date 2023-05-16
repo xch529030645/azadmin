@@ -46,10 +46,9 @@ pub async fn bind_app(pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
     }
 }
 
-pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertiser_id: &String, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
-    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? AND advertiser_id=? GROUP BY package_name, stat_datetime, country")
+pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country")
         .bind(&date)
-        .bind(advertiser_id)
         .fetch_all(pool).await;
     match rs {
         Ok(list) => {
@@ -57,9 +56,9 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertis
             let mut map: HashMap<String, AdsDailyReleaseReport> = HashMap::new();
             for item in list {
                 let key = format!("{}-{}", item.package_name, item.stat_datetime);
-                if item.package_name.eq("com.onlinepet.huawei") {
-                    println!("{} {} {}", item.package_name, item.country, item.cost);
-                }
+                // if item.package_name.eq("com.onlinepet.huawei") {
+                //     println!("{} {} {}", item.package_name, item.country, item.cost);
+                // }
                 if !map.contains_key(&key) {
                     let vo = AdsDailyReleaseReport {
                         package_name: item.package_name.clone(),
@@ -80,9 +79,9 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, advertis
             }
 
             for k in map {
-                if k.1.package_name.eq("com.onlinepet.huawei") {
-                    println!("total {} {} {}", &k.1.package_name, &k.1.country, &k.1.cost);
-                }
+                // if k.1.package_name.eq("com.onlinepet.huawei") {
+                //     println!("total {} {} {}", &k.1.package_name, &k.1.country, &k.1.cost);
+                // }
                 // println!("total cost : {} - {}", advertiser_id, &k.1.cost);
                 ret.push(k.1);
             }
