@@ -520,7 +520,7 @@ pub async fn save_app_umeng_duration(pool: &Pool<MySql>, appkey: &str, date: &st
 }
 
 pub async fn get_umeng_app_without_duration(pool: &Pool<MySql>) -> Option<Vec<UMRetentionApp>> {
-    let rs = sqlx::query_as::<_, UMRetentionApp>("SELECT appkey, `date` FROM um_retention WHERE ISNULL(duration)")
+    let rs = sqlx::query_as::<_, UMRetentionApp>("SELECT appkey, `date` FROM um_retention WHERE ISNULL(duration) OR duration=0")
         .fetch_all(pool)
         .await;
     match rs {
