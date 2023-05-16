@@ -196,9 +196,9 @@ pub async fn insert_or_update_daily_release_report(pool: &Pool<MySql>, vo: &AdsD
 
 pub async fn get_app_roas(pool: &Pool<MySql>, param: &ReqRoas) -> Option<Vec<AdsRoas>> {
     let sql = if let Some(country) = &param.country {
-        format!("SELECT package_name, SUM(cost) as cost, CAST(SUM(active) AS SIGNED) as active, SUM(iaa) as iaa, DATE_FORMAT(stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(record_datetime, '%Y-%m-%d') as record_datetime FROM ads_daily_release_reports WHERE package_name=? AND country='{}' AND stat_datetime BETWEEN ? AND ? GROUP BY package_name,stat_datetime,record_datetime", country)
+        format!("SELECT package_name, cost, active, iaa, DATE_FORMAT(stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(record_datetime, '%Y-%m-%d') as record_datetime FROM ads_daily_release_reports WHERE package_name=? AND country='{}' AND stat_datetime BETWEEN ? AND ?", country)
     } else {
-        "SELECT package_name, SUM(cost) as cost, CAST(SUM(active) AS SIGNED) as active, SUM(iaa) as iaa, DATE_FORMAT(stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(record_datetime, '%Y-%m-%d') as record_datetime FROM ads_daily_release_reports WHERE package_name=? AND stat_datetime BETWEEN ? AND ? GROUP BY package_name,stat_datetime,record_datetime".to_string()
+        "SELECT package_name, cost, active, iaa, DATE_FORMAT(stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(record_datetime, '%Y-%m-%d') as record_datetime FROM ads_daily_release_reports WHERE package_name=? AND country='ALL' AND stat_datetime BETWEEN ? AND ?".to_string()
     };
     let rs = sqlx::query_as::<_, AdsRoas>(sql.as_str())
         .bind(&param.package_name)
