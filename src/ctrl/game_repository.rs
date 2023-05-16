@@ -307,9 +307,9 @@ pub async fn get_expired_connect_token(pool: &Pool<MySql>) -> Option<Vec<Connect
     }
 }
 
-pub async fn get_one_unknown_package_name(pool: &Pool<MySql>) -> Option<UnknownPackageName> {
-    let rs = sqlx::query_as::<_, UnknownPackageName>("SELECT * from unknown_package_name LIMIT 1")
-        .fetch_one(pool)
+pub async fn get_one_unknown_package_name(pool: &Pool<MySql>) -> Option<Vec<UnknownPackageName>> {
+    let rs = sqlx::query_as::<_, UnknownPackageName>("SELECT * from unknown_package_name")
+        .fetch_all(pool)
         .await;
     match rs {
         Ok(list) => Some(list),

@@ -784,17 +784,19 @@ impl GameService {
 
     pub async fn check_package_app_id(&self, pool: &Pool<MySql>) {
         let rs = game_repository::get_one_unknown_package_name(pool).await;
-        if let Some(pkg) = rs {
-            let accounts = game_repository::get_untry_connect_token(pool, &pkg.package_name).await;
-            if let Some(accounts) = accounts {
-                for account in accounts {
-                    let package_name = pkg.package_name.clone();
-                    let mysql = pool.clone();
-                    let service = self.clone();
-                    let account_copy = account.clone();
-                    actix_rt::spawn(async move {
-                        service.get_app_id_by_package_name(&mysql, &package_name, &account_copy).await
-                    });
+        if let Some(list) = rs {
+            for pkg in list {
+                let accounts = game_repository::get_untry_connect_token(pool, &pkg.package_name).await;
+                if let Some(accounts) = accounts {
+                    for account in accounts {
+                        let package_name = pkg.package_name.clone();
+                        let mysql = pool.clone();
+                        let service = self.clone();
+                        let account_copy = account.clone();
+                        // actix_rt::spawn(async move {
+                            service.get_app_id_by_package_name(&mysql, &package_name, &account_copy).await
+                        // });
+                    }
                 }
             }
             // pkg.package_name
@@ -819,8 +821,6 @@ impl GameService {
                 }
             }
         }
-        
     }
-
     
 }
