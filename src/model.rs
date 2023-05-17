@@ -100,6 +100,15 @@ pub struct AdminInfo {
     pub password: String
 }
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResSumReports {
+    pub cost: f64,
+    pub active: i32,
+    pub iaa: f64,
+    pub earnings: Option<f64>,
+    pub first_day_iaa: Option<f64>
+}
+
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
 pub struct AdsToken {
     pub client_id: String,

@@ -149,6 +149,46 @@ impl GameService {
             None
         }
     }
+
+    pub async fn get_sum_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResSumReports> {
+        let today = Local::now().format("%Y-%m-%d").to_string();
+        let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
+        
+        let mut sql = "SELECT SUM(a.cost) as cost, CAST(SUM(a.active) as UNSIGNED) as active, SUM(a.iaa) as iaa, SUM(c.earnings) as earnings, SUM(d.iaa) as first_day_iaa 
+        FROM ads_daily_release_reports a 
+        LEFT JOIN apps b ON a.package_name = b.package_name 
+        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
+        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country ".to_string();
+        let mut conds: Vec<String> = vec![];
+        conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
+        if let Some(package_name) = &params.package_name {
+            conds.push(format!("a.package_name='{}'", package_name));
+        }
+        if let Some(start_date) = &params.start_date {
+            conds.push(format!("a.stat_datetime>='{}'", start_date));
+        }
+        if let Some(end_date) = &params.end_date {
+            conds.push(format!("a.stat_datetime<='{}'", end_date));
+        }
+        if let Some(country) = &params.country {
+            conds.push(format!("a.country='{}'", country));
+        }
+
+        if !conds.is_empty() {
+            sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
+        }
+
+        let rs = sqlx::query_as::<_, ResSumReports>(sql.as_str())
+        .fetch_one(pool)
+        .await;
+        match rs {
+            Ok(v) => Some(v),
+            Err(e) => {
+                println!("get_sum_reports err {}", e);
+                None
+            }
+        }
+    }
     
     pub async fn get_apps(&self, pool: &Pool<MySql>) -> Option<Vec<App>> {
         let rs = sqlx::query_as::<_, App>("SELECT a.*, b.appkey FROM apps a LEFT JOIN um_apps b ON a.package_name=b.package_name")

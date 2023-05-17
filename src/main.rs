@@ -105,6 +105,7 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::get_app_gallery)
             .service(game_controller::add_app_gallery)
             .service(game_controller::get_reports)
+            .service(game_controller::get_sum_reports)
             .service(game_controller::get_apps)
             .service(game_controller::bind_app)
             .service(game_controller::set_umkey)
