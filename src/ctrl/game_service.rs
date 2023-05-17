@@ -101,18 +101,36 @@ impl GameService {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
 
-        // let order_prop = match &params.order_prop {
-        //     Some(order_prop) => {
-        //         match order_prop.as_str() {
-        //             "" => ""
-        //         }
-        //     },
-        //     None => {
-        //         "a.stat_datetime"
-        //     }
-        // };
+        // cost, active, iaa, earnings
+        let order_prop = match &params.order_prop {
+            Some(order_prop) => {
+                match order_prop.as_str() {
+                    "cost" => "a.cost",
+                    "active" => "a.active",
+                    "iaa" => "a.iaa",
+                    "earnings" => "e.earnings",
+                    _ => "a.stat_datetime"
+                }
+            },
+            None => {
+                "a.stat_datetime"
+            }
+        };
 
-        sql += format!(" ORDER BY a.stat_datetime DESC LIMIT {}, {}", params.page * params.len, params.len).as_str();
+        let order = match &params.order {
+            Some(order) => {
+                match order.as_str() {
+                    "descending" => "DESC",
+                    "ascending" => "ASC",
+                    _ => "DESC"
+                }
+            },
+            None => {
+                "DESC"
+            }
+        };
+
+        sql += format!(" ORDER BY {} {} LIMIT {}, {}", order_prop, order, params.page * params.len, params.len).as_str();
         // println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
