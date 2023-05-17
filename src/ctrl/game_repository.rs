@@ -141,9 +141,9 @@ async fn is_release_report_exists(pool: &Pool<MySql>, package_name: &String, sta
         .bind(stat_datetime)
         .bind(country)
         .bind(record_datetime)
-        .execute(pool).await;
+        .fetch_one(pool).await;
     match rs {
-        Ok(_) => true,
+        Ok(v) => true,
         Err(_) => false
     }
 }

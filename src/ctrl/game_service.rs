@@ -408,12 +408,11 @@ impl GameService {
     async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String, app_package_names: &mut HashSet<String>) {
         let list = game_repository::calc_ads_daily_release_reports_by_date(pool, &today).await;
         if let Some(list) = list {
-            println!("calc_release_daily_reports: {} {} {}", today, record_date, list.len());
             for vo in list {
                 app_package_names.insert(vo.package_name.clone());
-                // if vo.cost == 0_f64 && vo.active == 0 && vo.iaa == 0_f64 {
-                //     continue;
-                // }
+                if vo.cost == 0_f64 && vo.active == 0 && vo.iaa == 0_f64 {
+                    continue;
+                }
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
             }
         }
