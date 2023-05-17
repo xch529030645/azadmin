@@ -53,6 +53,7 @@ pub async fn get_package_name_by_app_id(pool: &Pool<MySql>, app_id: &String) -> 
     match rs {
         Ok(v) => {
             let a: String = v.get(0);
+            println!("get_package_name_by_app_id {}", &a);
             Some(a)
         },
         Err(e) => {
