@@ -108,7 +108,7 @@ impl GameService {
                     "cost" => "a.cost",
                     "active" => "a.active",
                     "iaa" => "a.iaa",
-                    "earnings" => "e.earnings",
+                    "earnings" => "c.earnings",
                     _ => "a.stat_datetime"
                 }
             },
