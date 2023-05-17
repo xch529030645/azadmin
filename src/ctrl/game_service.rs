@@ -151,7 +151,7 @@ impl GameService {
     }
     
     pub async fn get_apps(&self, pool: &Pool<MySql>) -> Option<Vec<App>> {
-        let rs = sqlx::query_as::<_, App>("SELECT * FROM apps")
+        let rs = sqlx::query_as::<_, App>("SELECT a.*, b.appkey FROM apps a LEFT JOIN um_apps b ON a.package_name=b.package_name")
         .fetch_all(pool)
         .await;
         match rs {
@@ -165,6 +165,10 @@ impl GameService {
 
     pub async fn bind_app(&self, pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
         game_repository::bind_app(pool, param).await
+    }
+
+    pub async fn set_umkey(&self, pool: &Pool<MySql>, param: &ReqBindUmKey) -> i32 {
+        game_repository::set_umkey(pool, param).await
     }
 
     pub async fn get_app_roas(&self, pool: &Pool<MySql>, param: &ReqRoas) -> Option<Vec<AdsRoas>> {

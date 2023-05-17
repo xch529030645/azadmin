@@ -68,6 +68,12 @@ pub async fn bind_app(_: UserData, data: web::Data<AppState>, game_service: web:
     return Results::err(err);
 }
 
+#[post("/azadmin/set_umkey")]
+pub async fn set_umkey(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqBindUmKey>) -> impl Responder {
+    let err = game_service.set_umkey(&data.pool, &param.0).await;
+    return Results::err(err);
+}
+
 #[post("/azadmin/get_app_roas")]
 pub async fn get_app_roas(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqRoas>) -> impl Responder {
     let rs = game_service.get_app_roas(&data.pool, &param.0).await;

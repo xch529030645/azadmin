@@ -46,6 +46,44 @@ pub async fn bind_app(pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
     }
 }
 
+pub async fn get_package_name_by_app_id(pool: &Pool<MySql>, app_id: &String) -> Option<String> {
+    let rs = sqlx::query("SELECT package_name FROM apps app_id=?")
+        .bind(app_id)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let a: String = v.get(0);
+            Some(a)
+        },
+        Err(e) => {
+            print!("get_package_name_by_app_id: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn set_umkey(pool: &Pool<MySql>, param: &ReqBindUmKey) -> i32 {
+    let package_name = get_package_name_by_app_id(pool, &param.app_id).await;
+    if let Some(package_name) = package_name {
+        let rs = sqlx::query("UPDATE um_apps SET package_name=? WHERE appkey=?")
+            .bind(&package_name)
+            .bind(&param.appkey)
+            .execute(pool).await;
+        match rs {
+            Ok(v) => {
+                0
+            },
+            Err(e) => {
+                println!("set_umkey err: {}", e);
+                1
+            }
+        }
+    } else {
+        1
+    }
+    
+}
+
 pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
     let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country")
         .bind(&date)

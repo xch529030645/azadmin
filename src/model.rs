@@ -35,6 +35,12 @@ pub struct ReqBindApp {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqBindUmKey {
+    pub appkey: String,
+    pub app_id: String
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqRoas {
     pub package_name: String,
     pub start_date: String,
