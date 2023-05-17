@@ -143,7 +143,10 @@ async fn is_release_report_exists(pool: &Pool<MySql>, package_name: &String, sta
         .bind(record_datetime)
         .fetch_one(pool).await;
     match rs {
-        Ok(v) => true,
+        Ok(v) => {
+            let a: i32 = v.get(0);
+            a == 1
+        },
         Err(_) => false
     }
 }
