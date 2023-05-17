@@ -47,7 +47,7 @@ pub async fn bind_app(pool: &Pool<MySql>, param: &ReqBindApp) -> i32 {
 }
 
 pub async fn get_package_name_by_app_id(pool: &Pool<MySql>, app_id: &String) -> Option<String> {
-    let rs = sqlx::query("SELECT package_name FROM apps app_id=?")
+    let rs = sqlx::query("SELECT package_name FROM apps WHERE app_id=?")
         .bind(app_id)
         .fetch_one(pool).await;
     match rs {
