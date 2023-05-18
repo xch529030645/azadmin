@@ -425,7 +425,7 @@ impl GameService {
                                             break;
                                         }
                                     }
-                                    service.calc_release_daily_reports(&mysql, &adv_token_copy.advertiser_id, &date, &record_date, &mut app_package_names).await;
+                                    service.calc_release_daily_reports(&mysql, &date, &record_date, &mut app_package_names).await;
                                 }
 
                                 
@@ -464,7 +464,7 @@ impl GameService {
         
     }
 
-    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, today: &String, record_date: &String, app_package_names: &mut HashSet<String>) {
+    async fn calc_release_daily_reports(&self, pool: &Pool<MySql>, today: &String, record_date: &String, app_package_names: &mut HashSet<String>) {
         let list = game_repository::calc_ads_daily_release_reports_by_date(pool, &today).await;
         if let Some(list) = list {
             for vo in list {
