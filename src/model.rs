@@ -86,7 +86,8 @@ pub struct ResAdsReports {
     pub app_name: Option<String>,
     pub package_name: Option<String>,
     pub duration: Option<i32>,
-    pub r1: Option<f32>
+    pub r1: Option<f32>,
+    pub remark: Option<String>
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]

@@ -70,13 +70,14 @@ impl GameService {
         let today = Local::now().format("%Y-%m-%d").to_string();
         let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
         
-        let mut sql = "SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, d.iaa as first_day_iaa, f.duration, f.r1 
+        let mut sql = "SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, d.iaa as first_day_iaa, f.duration, f.r1, g.remark
         FROM ads_daily_release_reports a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
         LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
         LEFT JOIN um_apps e ON e.package_name = a.package_name 
-        LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime ".to_string();
+        LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
+        LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
         let mut conds: Vec<String> = vec![];
         conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
         if let Some(package_name) = &params.package_name {
