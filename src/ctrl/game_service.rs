@@ -80,7 +80,7 @@ impl GameService {
         let mut conds: Vec<String> = vec![];
         conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
         if let Some(package_name) = &params.package_name {
-            conds.push(format!("a.package_name='{}'", package_name));
+            conds.push(format!("FIND_IN_SET(a.package_name,'{}')", package_name));
         }
         if let Some(start_date) = &params.start_date {
             conds.push(format!("a.stat_datetime>='{}'", start_date));
@@ -89,7 +89,7 @@ impl GameService {
             conds.push(format!("a.stat_datetime<='{}'", end_date));
         }
         if let Some(country) = &params.country {
-            conds.push(format!("a.country='{}'", country));
+            conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
         }
 
         if !conds.is_empty() {
