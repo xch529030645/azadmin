@@ -174,7 +174,7 @@ pub async fn insert_or_update_daily_release_report(pool: &Pool<MySql>, vo: &AdsD
     } else {
         let rs = sqlx::query("INSERT INTO ads_daily_release_reports
             (package_name, cost, active, iaa, stat_datetime, record_datetime, country)
-            VALUES(?,?,?,?,?,?,?);
+            VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE cost=VALUES(cost),active=VALUES(active),iaa=VALUES(iaa);
             ")
                 .bind(&vo.package_name)
                 .bind(&vo.cost)
