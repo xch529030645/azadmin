@@ -262,7 +262,7 @@ impl GameService {
     async fn check_market_access_token(&self, pool: &Pool<MySql>) {
         // println!();
         // println!("==check_market_access_token start==");
-        let rs = sqlx::query_as::<_, ReleaseClientToken>("SELECT * from advertisers WHERE (ISNULL(expires_in) OR expires_in < UNIX_TIMESTAMP()*1000) AND NOT ISNULL(access_token)")
+        let rs = sqlx::query_as::<_, ReleaseClientToken>("SELECT * from advertisers WHERE (ISNULL(expires_in) OR expires_in < UNIX_TIMESTAMP()*1000+1800) AND NOT ISNULL(access_token)")
         .fetch_all(pool)
         .await;
         match rs {
