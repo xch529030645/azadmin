@@ -1,4 +1,4 @@
-use std::{fs, io::Write};
+use std::{fs, io::Write, time::{SystemTime, UNIX_EPOCH}};
 
 use actix_files::NamedFile;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, Result};
@@ -151,17 +151,25 @@ pub async fn query_umeng_apps(pool: &Pool<MySql>, game_service: &GameService) {
 }
 
 pub async fn query_last_30_umeng_retentions(pool: &Pool<MySql>, game_service: &GameService) {
-    let time = Local::now().timestamp() % 86400;
+    let time = timestamp() % 86400;
     println!("query_last_30_umeng_retentions {}", time);
-    if time >= 32400 && time < 36000 {
+    if time >= 32400 && time < 36500 {
         game_service.query_last_30_umeng_retentions(pool).await;
     }
 }
 
 pub async fn query_umeng_duration(pool: &Pool<MySql>, game_service: &GameService) {
-    let time = Local::now().timestamp() % 86400;
+    let time = timestamp() % 86400;
     println!("query_umeng_duration {}", time);
-    if time >= 32400 && time < 36000 {
+    if time >= 32400 && time < 36500 {
         game_service.query_umeng_duration(pool).await;
     }
+}
+
+fn timestamp() -> i64 {
+    let start = SystemTime::now();
+    let since_the_epoch = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+    since_the_epoch.as_secs() as i64
 }
