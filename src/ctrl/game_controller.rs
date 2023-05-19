@@ -152,6 +152,7 @@ pub async fn query_umeng_apps(pool: &Pool<MySql>, game_service: &GameService) {
 
 pub async fn query_last_30_umeng_retentions(pool: &Pool<MySql>, game_service: &GameService) {
     let time = Local::now().timestamp() % 86400;
+    println!("query_last_30_umeng_retentions {}", time);
     if time >= 32400 && time < 36000 {
         game_service.query_last_30_umeng_retentions(pool).await;
     }
@@ -159,6 +160,7 @@ pub async fn query_last_30_umeng_retentions(pool: &Pool<MySql>, game_service: &G
 
 pub async fn query_umeng_duration(pool: &Pool<MySql>, game_service: &GameService) {
     let time = Local::now().timestamp() % 86400;
+    println!("query_umeng_duration {}", time);
     if time >= 32400 && time < 36000 {
         game_service.query_umeng_duration(pool).await;
     }
