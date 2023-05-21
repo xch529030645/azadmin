@@ -302,6 +302,16 @@ impl GameService {
                 } else {
                     0_f64
                 };
+                let retain = if let Some(retain) = &row.r1 {
+                    retain.to_string()
+                } else {
+                    "".to_string()
+                };
+                let duration = if let Some(duration) = &row.duration {
+                    duration.to_string()
+                } else {
+                    "".to_string()
+                };
                 s.push_str(format!("{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?}\n", 
                     &row.app_name,
                     &row.stat_datetime,
@@ -309,12 +319,12 @@ impl GameService {
                     &row.active,
                     cpi,
                     &row.iaa,
-                    &row.earnings,
+                    &row.earnings.unwrap_or(0_f64),
                     roas,
                     first_day_roas,
-                    &row.duration,
-                    &row.r1,
-                    &row.remark
+                    duration,
+                    retain,
+                    &row.remark.unwrap_or("".to_string())
                 ).as_str());
             }
         }
