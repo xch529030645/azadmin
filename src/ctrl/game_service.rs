@@ -313,7 +313,7 @@ impl GameService {
                     "".to_string()
                 };
                 s.push_str(format!("{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?}\n", 
-                    &row.app_name,
+                    &row.app_name.unwrap_or("Unknown".to_string()),
                     &row.stat_datetime,
                     &row.cost,
                     &row.active,
