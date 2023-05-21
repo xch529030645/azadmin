@@ -1,7 +1,7 @@
 use std::{fs, io::Write, time::{SystemTime, UNIX_EPOCH}};
 
 use actix_files::NamedFile;
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, Result};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, Result, http::header::{ContentDisposition, DispositionType, DispositionParam}};
 use chrono::Local;
 use sqlx::{Pool, MySql};
 use actix_multipart::{
@@ -54,6 +54,28 @@ pub async fn add_app_gallery(_: UserData, data: web::Data<AppState>, game_servic
 pub async fn get_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
     let list = game_service.get_reports(&data.pool, &param.0).await;
     return Results::done(&list.as_ref());
+}
+
+#[get("/azadmin/download_reports")]
+pub async fn download_reports(data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Query<ReqQueryReports>) -> Result<HttpResponse> {
+    // println!("download_reports");
+    let query = &param.0;
+
+    let ret = game_service.generate_reports_csv(&data.pool, query).await;
+
+    let filename = format!("{}-{}-{}.csv", &query.country.clone().unwrap_or("".to_string()), &query.start_date.clone().unwrap_or("".to_string()), &query.end_date.clone().unwrap_or("".to_string()));
+    let cd = ContentDisposition {
+        disposition: DispositionType::FormData,
+        parameters: vec![
+            DispositionParam::Name(String::from("upload")),
+            DispositionParam::Filename(filename),
+        ],
+    };
+    
+    let mut builder = HttpResponse::Ok();
+    builder.insert_header((actix_web::http::header::CONTENT_DISPOSITION, cd));
+
+    Ok(builder.body(ret))
 }
 
 #[post("/azadmin/get_sum_reports")]

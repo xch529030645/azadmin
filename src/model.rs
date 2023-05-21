@@ -1,8 +1,25 @@
 
+use std::fs;
+
 // use actix_multipart_derive::MultipartForm;
-use actix_web::{Responder, web::BytesMut};
+use actix_web::{Responder};
 use serde::{Deserialize, Serialize};
-use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
+use actix_multipart::form::{tempfile::TempFile, MultipartForm};
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ServerConfig {
+    pub password: String,
+    pub profiles: String
+}
+
+impl ServerConfig {
+    pub fn read() -> ServerConfig {
+        let data = fs::read_to_string("config.json").unwrap();
+        let config: Result<ServerConfig, serde_json::Error> = serde_json::from_str(data.as_str());
+        config.unwrap()
+    }
+}
 
 #[derive(Serialize,Deserialize)]
 pub struct MysqlConfig {
