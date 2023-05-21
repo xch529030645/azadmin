@@ -269,7 +269,7 @@ impl GameService {
             }
         };
 
-        sql += format!(" ORDER BY {} {} LIMIT", order_prop, order).as_str();
+        sql += format!(" ORDER BY {} {}", order_prop, order).as_str();
         // println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
