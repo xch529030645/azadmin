@@ -54,10 +54,9 @@ pub struct ReqQueryEarningReports {
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResAdsEarningReports {
-    pub stat_datetime: String,
     pub earnings: Option<f64>,
     pub app_name: Option<String>,
-    pub package_name: Option<String>,
+    pub app_id: Option<String>,
     pub remark: Option<String>
 }
 
