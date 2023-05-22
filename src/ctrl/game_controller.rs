@@ -204,5 +204,10 @@ fn timestamp() -> i64 {
 }
 
 pub async fn query_last_day_earning_reports(pool: &Pool<MySql>, game_service: &GameService) {
-    game_service.query_last_day_earning_reports(pool).await;
+    let time = timestamp() % 86400;
+    println!("query_last_day_earning_reports {}", time);
+    if time >= 3600 && time < 4500 {
+        game_service.query_last_day_earning_reports(pool).await;
+    }
+    
 }
