@@ -1118,7 +1118,7 @@ impl GameService {
         }
         sql.push_str(" GROUP BY app_id) a LEFT JOIN apps b ON a.app_id=b.app_id LEFT JOIN ads_account c ON b.client_id = c.client_id WHERE a.earnings > 0");
 
-        println!("{}", &sql);
+        // println!("{}", &sql);
         let rs = sqlx::query_as::<_, ResAdsEarningReports>(sql.as_str())
         .fetch_all(pool)
         .await;
