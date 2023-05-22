@@ -46,6 +46,22 @@ pub struct ReqQueryReports {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqQueryEarningReports {
+    pub app_ids: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResAdsEarningReports {
+    pub stat_datetime: String,
+    pub earnings: Option<f64>,
+    pub app_name: Option<String>,
+    pub package_name: Option<String>,
+    pub remark: Option<String>
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqBindApp {
     pub package_name: String,
     pub app_id: String

@@ -56,6 +56,12 @@ pub async fn get_reports(_: UserData, data: web::Data<AppState>, game_service: w
     return Results::done(&list.as_ref());
 }
 
+#[post("/azadmin/get_earnings_reports")]
+pub async fn get_earnings_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryEarningReports>) -> impl Responder {
+    let list = game_service.get_earnings_reports(&data.pool, &param.0).await;
+    return Results::done(&list.as_ref());
+}
+
 #[get("/azadmin/download_reports")]
 pub async fn download_reports(data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Query<ReqQueryReports>) -> Result<HttpResponse> {
     // println!("download_reports");

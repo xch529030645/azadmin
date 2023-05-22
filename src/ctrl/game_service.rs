@@ -181,7 +181,7 @@ impl GameService {
         let mut conds: Vec<String> = vec![];
         conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
         if let Some(package_name) = &params.package_name {
-            conds.push(format!("a.package_name='{}'", package_name));
+            conds.push(format!("FIND_IN_SET(a.package_name,'{}')", package_name));
         }
         if let Some(start_date) = &params.start_date {
             conds.push(format!("a.stat_datetime>='{}'", start_date));
@@ -190,7 +190,7 @@ impl GameService {
             conds.push(format!("a.stat_datetime<='{}'", end_date));
         }
         if let Some(country) = &params.country {
-            conds.push(format!("a.country='{}'", country));
+            conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
         }
 
         if !conds.is_empty() {
@@ -623,6 +623,7 @@ impl GameService {
                     // let mut sqls = Vec::<String>::new();
                     if let Some(data) = reports.data {
                         let now = self.timestamp();
+                        // data.list.as_mut().filter(predicate)
                         for vo in data.list {
                             if vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<f32>().unwrap_or(0_f32) == 0_f32 
                                 && vo.thousand_show_cost.parse::<f32>().unwrap() == 0_f32 && vo.cost.parse::<f32>().unwrap_or(0_f32) == 0_f32
@@ -647,7 +648,8 @@ impl GameService {
                             let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
                             let sql = "INSERT INTO azadmin.reports
                             (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, show_count, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
-                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                            VALUES
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
                             ON DUPLICATE KEY UPDATE show_count=VALUES(show_count),
                                 click_count=VALUES(click_count),
                                 cpc=VALUES(cpc),
@@ -707,10 +709,6 @@ impl GameService {
                                 .bind(&vo.register_cost)
                                 .bind(&vo.retain_count_normalized)
                                 .bind(&vo.retain_cost_normalized)
-                                // .bind(&vo.activate_hms_count)
-                                // .bind(&vo.activate_hms_cost)
-                                // .bind(&vo.retain_hms_count)
-                                // .bind(&vo.retain_hms_cost)
                                 .bind(&vo.three_day_retain_count)
                                 .bind(&vo.three_day_retain_cost)
                                 .bind(&vo.subscribe_count)
@@ -1100,6 +1098,38 @@ impl GameService {
             }
         }
         println!("query_umeng_duration use {}", self.timestamp() - now);
+    }
+
+    pub async fn get_earnings_reports(&self, pool: &Pool<MySql>, params: &ReqQueryEarningReports) -> Option<Vec<ResAdsEarningReports>> {
+        let mut sql = "SELECT a.*, b.app_name, c.remark FROM (
+            SELECT app_id, SUM(earnings) AS earnings FROM ads_daily_earnings_reports ".to_string();
+        let mut conds = vec![];
+        if let Some(app_ids) = &params.app_ids {
+            conds.push(format!("FIND_IN_SET(app_id, '{}')", app_ids));
+        }
+        if let Some(start_date) = &params.start_date {
+            conds.push(format!("stat_datetime>='{}'", start_date));
+        }
+        if let Some(end_date) = &params.end_date {
+            conds.push(format!("stat_datetime<='{}'", end_date));
+        }
+        if !conds.is_empty() {
+            sql.push_str("WHERE ");
+            sql.push_str(conds.join(" AND ").as_str());
+        }
+        sql.push_str(" GROUP BY app_id) a LEFT JOIN apps b ON a.app_id=b.app_id LEFT JOIN ads_account c ON b.client_id = c.client_id WHERE a.earnings > 0");
+
+        println!("{}", &sql);
+        let rs = sqlx::query_as::<_, ResAdsEarningReports>(sql.as_str())
+        .fetch_all(pool)
+        .await;
+        match rs {
+            Ok(v) => Some(v),
+            Err(e) => {
+                println!("get_earnings_reports {}", e);
+                None
+            }
+        }
     }
     
 }
