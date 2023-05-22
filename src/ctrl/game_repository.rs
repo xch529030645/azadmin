@@ -572,3 +572,35 @@ pub async fn get_umeng_app_without_duration(pool: &Pool<MySql>) -> Option<Vec<UM
         }
     }
 }
+
+pub async fn is_daily_task_executed(pool: &Pool<MySql>, today: &String, task_type: i32) -> bool {
+    let rs = sqlx::query("SELECT 1 FROM task_daily_records WHERE `date`=? AND task_type=?")
+        .bind(today)
+        .bind(task_type)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let a: bool = v.get(0);
+            a
+        },
+        Err(e) => {
+            print!("is_daily_task_executed: {}", e);
+            false
+        }
+    }
+}
+
+pub async fn execute_daily_task_done(pool: &Pool<MySql>, today: &String, task_type: i32) {
+    let rs = sqlx::query("INSERT INTO task_daily_records (`date`,task_type) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM task_daily_records WHERE `date`=? AND task_type=?)")
+        .bind(today)
+        .bind(task_type) 
+        .bind(today)
+        .bind(task_type)
+        .execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            print!("execute_daily_task_done: {}", e);
+        }
+    }
+}

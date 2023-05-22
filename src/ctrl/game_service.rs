@@ -766,7 +766,7 @@ impl GameService {
     }
 
 
-    pub async fn query_ads_reports(&self, pool: &Pool<MySql>) {
+    pub async fn query_ads_reports(&self, pool: &Pool<MySql>, today: &String) {
         println!();
         println!("==query_ads_reports start==");
         let rs = sqlx::query_as::<_, AdsToken>("SELECT * FROM ads_account")
@@ -780,7 +780,7 @@ impl GameService {
                     if let Some(access_token) = adv.access_token {
                         let mut page = 1;
                         loop {
-                            let page_info = self.query_ads_reports_by_token(&pool, &adv.client_id, &access_token, page, 1000).await;
+                            let page_info = self.query_ads_reports_by_token(&pool, today, &adv.client_id, &access_token, page, 1000).await;
                             if let Some(page_info) = page_info {
                                 if page < page_info.total_page {
                                     page = page + 1;
@@ -793,7 +793,7 @@ impl GameService {
                         }
                     }
                 }
-                let today = Local::now().format("%Y-%m-%d").to_string();
+                // let today = Local::now().format("%Y-%m-%d").to_string();
                 self.calc_ads_daily_reports(pool, &today).await;
             },
             Err(e) => {
@@ -806,9 +806,8 @@ impl GameService {
     }
 
     // #[async_recursion]
-    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, client_id: &String, access_token: &String, page: i32, page_size: i32) -> Option<EarningPageInfo> {
+    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, today: &String, client_id: &String, access_token: &String, page: i32, page_size: i32) -> Option<EarningPageInfo> {
         println!("query page {}", page);
-        let today = Local::now().format("%Y-%m-%d").to_string();
         let rs = server_api::query_ads_reports_by_token(&access_token, &today, &today, page, page_size).await;
         if let Some(reports) = rs {
             if reports.code == "0" {
@@ -1129,6 +1128,17 @@ impl GameService {
                 println!("get_earnings_reports {}", e);
                 None
             }
+        }
+    }
+
+    pub async fn query_last_day_earning_reports(&self, pool: &Pool<MySql>) {
+        let today = Local::now().format("%Y-%m-%d").to_string();
+        let is_executed = game_repository::is_daily_task_executed(pool, &today, 1).await;
+        if !is_executed {
+            let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap();
+            let yesterday = yesterday.format("%Y-%m-%d").to_string();
+            self.query_ads_reports(pool, &yesterday).await;
+            game_repository::execute_daily_task_done(pool, &today, 1).await;
         }
     }
     

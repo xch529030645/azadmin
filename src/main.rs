@@ -69,6 +69,7 @@ async fn main() -> std::io::Result<()> {
                     game_controller::check_access_token(&pool, &game_service).await;
                     game_controller::query_reports(&pool, &game_service).await;
                     game_controller::query_ads_reports(&pool, &game_service).await;
+                    game_controller::query_last_day_earning_reports(&pool, &game_service).await;
                     game_controller::query_last_90_release_reports(&pool, &game_service).await;
                     game_controller::query_umeng_apps(&pool, &game_service).await;
                     game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;

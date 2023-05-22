@@ -163,7 +163,8 @@ pub async fn query_reports(pool: &Pool<MySql>, game_service:&GameService) {
 }
 
 pub async fn query_ads_reports(pool: &Pool<MySql>, game_service:&GameService) {
-    game_service.query_ads_reports(pool).await;
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    game_service.query_ads_reports(pool, &today).await;
 }
 
 pub async fn query_last_90_release_reports(pool: &Pool<MySql>, game_service:&GameService) {
@@ -200,4 +201,8 @@ fn timestamp() -> i64 {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
     since_the_epoch.as_secs() as i64
+}
+
+pub async fn query_last_day_earning_reports(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.query_last_day_earning_reports(pool).await;
 }
