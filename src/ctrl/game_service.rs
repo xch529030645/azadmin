@@ -66,18 +66,9 @@ impl GameService {
         game_repository::add_app_gallery(pool, &param.client_id, &param.client_secret, &param.connect_client_id, &param.connect_client_secret, &param.remark).await
     }
 
-    pub async fn get_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
+    fn get_report_query_conds(&self, params: &ReqQueryReports) -> Vec<String> {
         let today = Local::now().format("%Y-%m-%d").to_string();
         let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
-        
-        let mut sql = "SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, SUM(d.iaa) as first_day_iaa, AVG(f.duration) AS duration, AVG(f.r1) AS r1, g.remark
-        FROM ads_daily_release_reports a 
-        LEFT JOIN apps b ON a.package_name = b.package_name 
-        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
-        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
-        LEFT JOIN um_apps e ON e.package_name = a.package_name 
-        LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
-        LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
         let mut conds: Vec<String> = vec![];
         conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
         if let Some(package_name) = &params.package_name {
@@ -92,6 +83,19 @@ impl GameService {
         if let Some(country) = &params.country {
             conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
         }
+        conds
+    }
+
+    async fn query_release_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports, conds: &Vec<String>) -> Option<Vec<ResAdsReports>>{
+        let mut sql = "SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, b.app_name, AVG(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
+        FROM ads_daily_release_reports a 
+        LEFT JOIN apps b ON a.package_name = b.package_name 
+        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
+        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
+        LEFT JOIN um_apps e ON e.package_name = a.package_name 
+        LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
+        LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
+        
 
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
@@ -101,21 +105,21 @@ impl GameService {
         // } else {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
-        sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings, g.remark";
+        sql += " GROUP BY a.package_name, b.app_name, g.remark";
 
         // cost, active, iaa, earnings
         let order_prop = match &params.order_prop {
             Some(order_prop) => {
                 match order_prop.as_str() {
-                    "cost" => "a.cost",
-                    "active" => "a.active",
-                    "iaa" => "a.iaa",
-                    "earnings" => "c.earnings",
-                    _ => "a.stat_datetime"
+                    "cost" => "t.cost",
+                    "active" => "t.active",
+                    "iaa" => "t.iaa",
+                    "earnings" => "t.earnings",
+                    _ => "t.cost"
                 }
             },
             None => {
-                "a.stat_datetime"
+                "t.cost"
             }
         };
 
@@ -132,21 +136,27 @@ impl GameService {
             }
         };
 
-        sql += format!(" ORDER BY {} {} LIMIT {}, {}", order_prop, order, params.page * params.len, params.len).as_str();
+        sql += format!(") t ORDER BY {} {} LIMIT {}, {}", order_prop, order, params.page * params.len, params.len).as_str();
         // println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
         .fetch_all(pool)
         .await;
-        let list = match rs {
+        match rs {
             Ok(v) => Some(v),
             Err(e) => {
                 println!("get_reports err {}", e);
                 None
             }
-        };
+        }
+    }
 
-        sql = "SELECT COUNT(a.id) AS `count` FROM ads_daily_release_reports a".to_string();
+    pub async fn get_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
+        let conds = self.get_report_query_conds(params);
+        let list = self.query_release_reports(pool, params, &conds).await;
+
+        
+        let mut sql = "SELECT COUNT(a.id) AS `count` FROM ads_daily_release_reports a".to_string();
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
         }
@@ -211,71 +221,73 @@ impl GameService {
     }
 
     pub async fn generate_reports_csv(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> String {
-        let today = Local::now().format("%Y-%m-%d").to_string();
-        let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
+        let conds = self.get_report_query_conds(params);
+
+        // let today = Local::now().format("%Y-%m-%d").to_string();
+        // let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
         
-        let mut sql = "SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, d.iaa as first_day_iaa, f.duration, f.r1, g.remark
-        FROM ads_daily_release_reports a 
-        LEFT JOIN apps b ON a.package_name = b.package_name 
-        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
-        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
-        LEFT JOIN um_apps e ON e.package_name = a.package_name 
-        LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
-        LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
-        let mut conds: Vec<String> = vec![];
-        conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
-        if let Some(package_name) = &params.package_name {
-            conds.push(format!("FIND_IN_SET(a.package_name,'{}')", package_name));
-        }
-        if let Some(start_date) = &params.start_date {
-            conds.push(format!("a.stat_datetime>='{}'", start_date));
-        }
-        if let Some(end_date) = &params.end_date {
-            conds.push(format!("a.stat_datetime<='{}'", end_date));
-        }
-        if let Some(country) = &params.country {
-            conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
-        }
+        // let mut sql = "SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime , '%Y-%m-%d') as stat_datetime, b.app_name, c.earnings, d.iaa as first_day_iaa, f.duration, f.r1, g.remark
+        // FROM ads_daily_release_reports a 
+        // LEFT JOIN apps b ON a.package_name = b.package_name 
+        // LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
+        // LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
+        // LEFT JOIN um_apps e ON e.package_name = a.package_name 
+        // LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
+        // LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
+        // let mut conds: Vec<String> = vec![];
+        // conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
+        // if let Some(package_name) = &params.package_name {
+        //     conds.push(format!("FIND_IN_SET(a.package_name,'{}')", package_name));
+        // }
+        // if let Some(start_date) = &params.start_date {
+        //     conds.push(format!("a.stat_datetime>='{}'", start_date));
+        // }
+        // if let Some(end_date) = &params.end_date {
+        //     conds.push(format!("a.stat_datetime<='{}'", end_date));
+        // }
+        // if let Some(country) = &params.country {
+        //     conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
+        // }
 
-        if !conds.is_empty() {
-            sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
-        }
+        // if !conds.is_empty() {
+        //     sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
+        // }
 
-        // cost, active, iaa, earnings
-        let order_prop = match &params.order_prop {
-            Some(order_prop) => {
-                match order_prop.as_str() {
-                    "cost" => "a.cost",
-                    "active" => "a.active",
-                    "iaa" => "a.iaa",
-                    "earnings" => "c.earnings",
-                    _ => "a.stat_datetime"
-                }
-            },
-            None => {
-                "a.stat_datetime"
-            }
-        };
+        // // cost, active, iaa, earnings
+        // let order_prop = match &params.order_prop {
+        //     Some(order_prop) => {
+        //         match order_prop.as_str() {
+        //             "cost" => "a.cost",
+        //             "active" => "a.active",
+        //             "iaa" => "a.iaa",
+        //             "earnings" => "c.earnings",
+        //             _ => "a.stat_datetime"
+        //         }
+        //     },
+        //     None => {
+        //         "a.stat_datetime"
+        //     }
+        // };
 
-        let order = match &params.order {
-            Some(order) => {
-                match order.as_str() {
-                    "descending" => "DESC",
-                    "ascending" => "ASC",
-                    _ => "DESC"
-                }
-            },
-            None => {
-                "DESC"
-            }
-        };
+        // let order = match &params.order {
+        //     Some(order) => {
+        //         match order.as_str() {
+        //             "descending" => "DESC",
+        //             "ascending" => "ASC",
+        //             _ => "DESC"
+        //         }
+        //     },
+        //     None => {
+        //         "DESC"
+        //     }
+        // };
 
-        sql += format!(" ORDER BY {} {}", order_prop, order).as_str();
-        // println!("{}", &sql);
+        // sql += format!(" ORDER BY {} {}", order_prop, order).as_str();
+        // // println!("{}", &sql);
 
-        let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
-        .fetch_all(pool)
-        .await;
+        // let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
+        // .fetch_all(pool)
+        // .await;
         // let list = match rs {
         //     Ok(v) => Some(v),
         //     Err(e) => {
@@ -283,10 +295,11 @@ impl GameService {
         //         None
         //     }
         // };
+        let rs = self.query_release_reports(pool, params, &conds).await;
 
         let mut s = String::from("");
-        s.push_str("App Name,Date,Cost,Active,CPI,IAA,Revenue,ROAS,ROAS of today,Duration,Retain,Advertiser\n");
-        if let Ok(list) = rs {
+        s.push_str("App Name,Cost,Active,CPI,IAA,Revenue,ROAS,ROAS of today,Duration,Retain,Advertiser\n");
+        if let Some(list) = rs {
             for row in list {
                 let cpi = if row.active > 0 {
                     row.cost / (row.active as f64)
@@ -313,9 +326,9 @@ impl GameService {
                 } else {
                     "".to_string()
                 };
-                s.push_str(format!("{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?}\n", 
+                s.push_str(format!("{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?}\n", 
                     &row.app_name.unwrap_or("Unknown".to_string()),
-                    &row.stat_datetime,
+                    // &row.stat_datetime,
                     &row.cost,
                     &row.active,
                     cpi,
@@ -390,7 +403,7 @@ impl GameService {
     async fn check_market_access_token(&self, pool: &Pool<MySql>) {
         // println!();
         // println!("==check_market_access_token start==");
-        let rs = sqlx::query_as::<_, ReleaseClientToken>("SELECT * from advertisers WHERE (ISNULL(expires_in) OR expires_in < UNIX_TIMESTAMP()*1000+1800) AND NOT ISNULL(access_token)")
+        let rs = sqlx::query_as::<_, ReleaseClientToken>("SELECT * from advertisers WHERE (ISNULL(expires_in) OR expires_in < UNIX_TIMESTAMP()*1000+3600) AND NOT ISNULL(access_token)")
         .fetch_all(pool)
         .await;
         match rs {

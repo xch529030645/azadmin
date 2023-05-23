@@ -109,7 +109,7 @@ pub struct UploadForm {
 pub struct ResAdsReports {
     // pub id: i32,
     // pub app_id: String,
-    pub stat_datetime: String,
+    // pub stat_datetime: Option<String>,
     pub earnings: Option<f64>,
     pub cost: f64,
     pub active: i32,

@@ -376,7 +376,7 @@ pub async fn save_unknown_package_name(pool: &Pool<MySql>, package_name: &str) {
 }
 
 pub async fn get_expired_ads_token(pool: &Pool<MySql>) -> Option<Vec<AdsToken>> {
-    let rs = sqlx::query_as::<_, AdsToken>("SELECT * from ads_account WHERE ISNULL(expire_time) OR expire_time < UNIX_TIMESTAMP()*1000+1800")
+    let rs = sqlx::query_as::<_, AdsToken>("SELECT * from ads_account WHERE ISNULL(expire_time) OR expire_time < UNIX_TIMESTAMP()*1000+3600")
         .fetch_all(pool)
         .await;
     match rs {
