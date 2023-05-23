@@ -553,12 +553,13 @@ impl GameService {
                                 let mut app_package_names: HashSet<String> = HashSet::new();
                                 for date in days {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
-                                    let mut page = 1;
+                                    let mut page_info: Option<PageInfo> = None;
                                     loop {
-                                        let page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page, 1000).await;
-                                        if let Some(page_info) = page_info {
-                                            if page < page_info.total_page {
-                                                page = page + 1;
+                                        page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page_info, 1000).await;
+                                        if let Some(mut pi) = page_info {
+                                            if pi.page < pi.total_page {
+                                                pi.page = pi.page + 1;
+                                                page_info = Some(pi);
                                             } else {
                                                 break;
                                             }
@@ -632,7 +633,11 @@ impl GameService {
     
 
     
-    async fn query_advertiser_reports(&self, pool: &Pool<MySql>, advertiser: &ReleaseToken, start_date: &String, end_date: &String, page: i32, page_size: i32) -> Option<PageInfo> {
+    async fn query_advertiser_reports(&self, pool: &Pool<MySql>, advertiser: &ReleaseToken, start_date: &String, end_date: &String, page_info: Option<PageInfo>, page_size: i32) -> Option<PageInfo> {
+        let page = match &page_info {
+            Some(v) => v.page,
+            None => 1
+        };
         println!("query_advertiser_reports page {}", page);
         if let Some(access_token) = &advertiser.access_token {
             let rs = server_api::query_reports(&advertiser.advertiser_id, access_token, &start_date, &end_date, page, page_size).await;
@@ -775,7 +780,12 @@ impl GameService {
                     // let r = sqlx::query(cmds.as_str()).execute(pool).await;
                     
                 } else {
-                    println!("query reports failed: {}", reports.message);
+                    println!("query_advertiser_reports failed: {}", reports.message);
+                    if reports.message.eq("token已过期") {
+                        self.check_market_access_token(pool).await;
+                        return page_info;
+                        // self.query_advertiser_reports(pool, advertiser, start_date, end_date, page, page_size).await;
+                    }
                 }
             }
             
@@ -796,12 +806,13 @@ impl GameService {
                 for adv in v {
                     println!("query_ads_reports {}", adv.client_id);
                     if let Some(access_token) = adv.access_token {
-                        let mut page = 1;
+                        let mut page_info: Option<EarningPageInfo> = None;
                         loop {
-                            let page_info = self.query_ads_reports_by_token(&pool, today, &adv.client_id, &access_token, page, 1000).await;
-                            if let Some(page_info) = page_info {
-                                if page < page_info.total_page {
-                                    page = page + 1;
+                            page_info = self.query_ads_reports_by_token(&pool, today, &adv.client_id, &access_token, page_info, 1000).await;
+                            if let Some(mut pi) = page_info {
+                                if pi.page < pi.total_page {
+                                    pi.page = pi.page + 1;
+                                    page_info = Some(pi);
                                 } else {
                                     break;
                                 }
@@ -824,7 +835,11 @@ impl GameService {
     }
 
     // #[async_recursion]
-    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, today: &String, client_id: &String, access_token: &String, page: i32, page_size: i32) -> Option<EarningPageInfo> {
+    async fn query_ads_reports_by_token(&self, pool: &Pool<MySql>, today: &String, client_id: &String, access_token: &String, page_info: Option<EarningPageInfo>, page_size: i32) -> Option<EarningPageInfo> {
+        let page = match &page_info {
+            Some(v) => v.page,
+            None => 1
+        };
         println!("query page {}", page);
         let rs = server_api::query_ads_reports_by_token(&access_token, &today, &today, page, page_size).await;
         if let Some(reports) = rs {
@@ -896,7 +911,11 @@ impl GameService {
                 // }
                 
             } else {
-                println!("query reports failed: {}", reports.message);
+                println!("query_ads_reports failed: {}", reports.message);
+                if reports.message.eq("token已过期") {
+                    self.check_ads_access_token(pool).await;
+                    return page_info;
+                }
             }
         }
         None
