@@ -604,3 +604,16 @@ pub async fn execute_daily_task_done(pool: &Pool<MySql>, today: &String, task_ty
         }
     }
 }
+
+pub async fn get_ads_accounts(pool: &Pool<MySql>) -> Option<Vec<AdsAccount>> {
+    let rs = sqlx::query_as::<_, AdsAccount>("SELECT client_id, remark FROM ads_account")
+        .fetch_all(pool)
+        .await;
+        match rs {
+            Ok(list) => Some(list),
+            Err(v) => {
+                println!("get_ads_accounts err: {}", v);
+                None
+            }
+        }
+}

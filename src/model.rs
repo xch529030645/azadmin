@@ -135,9 +135,9 @@ pub struct AdminInfo {
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResSumReports {
-    pub cost: f64,
-    pub active: i32,
-    pub iaa: f64,
+    pub cost: Option<f64>,
+    pub active: Option<i32>,
+    pub iaa: Option<f64>,
     pub earnings: Option<f64>,
     pub first_day_iaa: Option<f64>
 }
@@ -287,6 +287,12 @@ pub struct UMRetentionApp {
     pub date: String,
 }
 
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct AdsAccount {
+    pub client_id: String,
+    pub remark: String
+}
 
 
 #[derive(Deserialize, Serialize)]

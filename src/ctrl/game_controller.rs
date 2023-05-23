@@ -96,6 +96,13 @@ pub async fn get_apps(_: UserData, data: web::Data<AppState>, game_service: web:
     return Results::done(&list.as_ref());
 }
 
+#[post("/azadmin/get_ads_accounts")]
+pub async fn get_ads_accounts(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let list = game_service.get_ads_accounts(&data.pool).await;
+    return Results::done(&list.as_ref());
+}
+
+
 #[post("/azadmin/bind_app")]
 pub async fn bind_app(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqBindApp>) -> impl Responder {
     let err = game_service.bind_app(&data.pool, &param.0).await;
