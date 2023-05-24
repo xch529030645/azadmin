@@ -1168,15 +1168,32 @@ impl GameService {
         }
     }
 
-    pub async fn query_last_day_earning_reports(&self, pool: &Pool<MySql>) {
-        let today = Local::now().format("%Y-%m-%d").to_string();
-        let is_executed = game_repository::is_daily_task_executed(pool, &today, 1).await;
-        if !is_executed {
-            let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap();
-            let yesterday = yesterday.format("%Y-%m-%d").to_string();
-            self.query_ads_reports(pool, &yesterday).await;
-            game_repository::execute_daily_task_done(pool, &today, 1).await;
+    pub async fn query_last_90_day_earning_reports(&self, pool: &Pool<MySql>) {
+        let mut idx = 90;
+        let mut datetime = Local::now();
+        loop {
+            datetime = datetime.checked_sub_days(Days::new(1)).unwrap();
+            let date = datetime.format("%Y-%m-%d").to_string();
+            
+            let is_executed = game_repository::is_daily_task_executed(pool, &date, 1).await;
+            if !is_executed {
+                self.query_ads_reports(pool, &date).await;
+                game_repository::execute_daily_task_done(pool, &date, 1).await;
+            }
+            
+            idx = idx - 1;
+            if idx == 0 {
+                break;
+            }
         }
+        // let today = Local::now().format("%Y-%m-%d").to_string();
+        // let is_executed = game_repository::is_daily_task_executed(pool, &today, 1).await;
+        // if !is_executed {
+        //     let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap();
+        //     let yesterday = yesterday.format("%Y-%m-%d").to_string();
+        //     self.query_ads_reports(pool, &yesterday).await;
+        //     game_repository::execute_daily_task_done(pool, &today, 1).await;
+        // }
     }
     
 }
