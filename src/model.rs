@@ -43,7 +43,8 @@ pub struct ReqQueryReports {
     pub len: i32,
     pub order_prop: Option<String>,
     pub order: Option<String>,
-    pub group_by_country: bool
+    pub group_by_country: bool,
+    pub ads_accounts: Option<String>
 }
 
 #[derive(Serialize,Deserialize)]
