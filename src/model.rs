@@ -225,6 +225,7 @@ pub struct AdsRoas {
     pub cost: f64,
     pub active: i32,
     pub iaa: f64,
+    pub earnings: Option<f64>
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
