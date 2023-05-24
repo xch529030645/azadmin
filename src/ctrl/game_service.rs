@@ -1174,6 +1174,7 @@ impl GameService {
         loop {
             datetime = datetime.checked_sub_days(Days::new(1)).unwrap();
             let date = datetime.format("%Y-%m-%d").to_string();
+            println!("query_last_90_day_earning_reports {}", &date);
             
             let is_executed = game_repository::is_daily_task_executed(pool, &date, 1).await;
             if !is_executed {
