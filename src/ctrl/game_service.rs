@@ -81,7 +81,11 @@ impl GameService {
             conds.push(format!("a.stat_datetime<='{}'", end_date));
         }
         if let Some(country) = &params.country {
-            conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
+            if country.eq("ALL") {
+                conds.push("a.country!='ALL'".to_string());
+            } else {
+                conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
+            }
         } else {
             conds.push("a.country!='ALL'".to_string());
         }
