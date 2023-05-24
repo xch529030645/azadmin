@@ -57,7 +57,7 @@ impl ReqQueryAdEarningReport<'_> {
     pub fn create<'a>(page: i32, page_size: i32, start_date: &'a str, end_date: &'a str) -> ReqQueryAdEarningReport<'a> {
         return ReqQueryAdEarningReport {
             filtering: HashMap::new(),
-            group_by: vec!["STAT_BREAK_DOWNS_APP_ID".to_string(), "STAT_BREAK_DOWNS_PLACEMENT_ID".to_string()],
+            group_by: vec!["STAT_BREAK_DOWNS_APP_ID".to_string(), "STAT_BREAK_DOWNS_PLACEMENT_ID".to_string(), "STAT_BREAK_DOWNS_COUNTRY".to_string()],
             time_granularity: "STAT_TIME_GRANULARITY_DAILY".to_string(),
             page,
             page_size,
