@@ -87,7 +87,7 @@ impl GameService {
     }
 
     async fn query_release_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports, conds: &Vec<String>) -> Option<Vec<ResAdsReports>>{
-        let mut sql = "SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, b.app_name, AVG(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
+        let mut sql = "SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, b.app_name, SUM(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
         FROM ads_daily_release_reports a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
