@@ -130,7 +130,8 @@ impl GameService {
         if params.group_by_country {
             group_by.push("a.country");
         }
-        sql += " GROUP BY " + group_by.join(",").as_str();
+        sql += " GROUP BY ";
+        sql += group_by.join(",").as_str();
 
         // cost, active, iaa, earnings
         let order_prop = match &params.order_prop {
