@@ -82,25 +82,38 @@ impl GameService {
         }
         if let Some(country) = &params.country {
             if country.eq("ALL") {
-                conds.push("a.country!='ALL'".to_string());
+                if params.group_by_country {
+                    conds.push("a.country='ALL'".to_string());
+                } else {
+                    conds.push("a.country!='ALL'".to_string());
+                }
             } else {
                 conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
             }
         } else {
-            conds.push("a.country!='ALL'".to_string());
+            if params.group_by_country {
+                conds.push("a.country='ALL'".to_string());
+            } else {
+                conds.push("a.country!='ALL'".to_string());
+            }
         }
         conds
     }
 
     async fn query_release_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports, conds: &Vec<String>) -> Option<Vec<ResAdsReports>>{
-        let mut sql = "SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, CONCAT(b.app_name,'-',a.country) AS app_name, SUM(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
+        let app_name_format = if params.group_by_country {
+            "CONCAT(b.app_name,'-',a.country) AS app_name"
+        } else {
+            "b.app_name"
+        };
+        let mut sql = format!("SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
         FROM ads_daily_release_reports a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
         LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
         LEFT JOIN um_apps e ON e.package_name = a.package_name 
         LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
-        LEFT JOIN ads_account g ON b.client_id=g.client_id ".to_string();
+        LEFT JOIN ads_account g ON b.client_id=g.client_id ", app_name_format);
         
 
         if !conds.is_empty() {
@@ -111,7 +124,13 @@ impl GameService {
         // } else {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
-        sql += " GROUP BY a.package_name, b.app_name, g.remark, a.country";
+        let mut group_by = [
+            "a.package_name", "b.app_name", "g.remark"
+        ].to_vec();
+        if params.group_by_country {
+            group_by.push("a.country");
+        }
+        sql += " GROUP BY " + group_by.join(",");
 
         // cost, active, iaa, earnings
         let order_prop = match &params.order_prop {
