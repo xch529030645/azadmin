@@ -83,18 +83,18 @@ impl GameService {
         if let Some(country) = &params.country {
             if country.eq("ALL") {
                 if params.group_by_country {
-                    conds.push("a.country='ALL'".to_string());
-                } else {
                     conds.push("a.country!='ALL'".to_string());
+                } else {
+                    conds.push("a.country='ALL'".to_string());
                 }
             } else {
                 conds.push(format!("FIND_IN_SET(a.country, '{}')", country));
             }
         } else {
             if params.group_by_country {
-                conds.push("a.country='ALL'".to_string());
-            } else {
                 conds.push("a.country!='ALL'".to_string());
+            } else {
+                conds.push("a.country='ALL'".to_string());
             }
         }
         conds
