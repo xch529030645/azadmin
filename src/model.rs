@@ -316,6 +316,15 @@ pub struct AdsAccount {
     pub remark: String
 }
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct Admin {
+    pub id: Option<i32>,
+    pub username: String,
+    pub password: String,
+    pub name: String,
+    pub role: i32,
+}
+
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {

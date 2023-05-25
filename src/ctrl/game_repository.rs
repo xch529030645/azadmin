@@ -876,3 +876,32 @@ pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, d
         }
     }
 }
+
+pub async fn save_admin(pool: &Pool<MySql>, param: &Admin) -> i32 {
+    let rs = if let Some(id) = param.id {
+        sqlx::query("UPDATE admin SET username=?, `password`=?, `name`=?, role=? WHERE id=?")
+            .bind(&param.username)
+            .bind(&param.password)
+            .bind(&param.name)
+            .bind(&param.role)
+            .bind(&param.id)
+            .execute(pool).await
+    } else {
+        sqlx::query("INSERT INTO admin (username, `password`, `name`, role) VALUES (?,?,?,?)")
+            .bind(&param.username)
+            .bind(&param.password)
+            .bind(&param.name)
+            .bind(&param.role)
+            .execute(pool).await
+    };
+    
+    match rs {
+        Ok(v) => {
+            0
+        },
+        Err(e) => {
+            print!("save_admin: {}", e);
+            1
+        }
+    }
+}

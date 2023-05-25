@@ -53,6 +53,10 @@ impl GameService {
         game_repository::update_advertiser_remark(pool, &param).await
     }
 
+    pub async fn save_admin(&self, pool: &Pool<MySql>, param: &Admin) -> i32 {
+        game_repository::save_admin(pool, param).await
+    }
+
     pub async fn get_app_gallery(&self, pool: &Pool<MySql>) -> Option<Vec<AppGallery>> {
         let rs = sqlx::query_as::<_, AppGallery>("SELECT * FROM ads_account")
         .fetch_all(pool)
