@@ -570,7 +570,7 @@ impl GameService {
                 for adv in v {
                     if !days_range.is_empty() {
                         for days in days_range.clone() {
-                            let adv_token_copy = adv.clone();
+                            let mut adv_token_copy = adv.clone();
                             let mysql = pool.clone();
                             let service = self.clone();
                             let record_date = end_date.clone();
@@ -581,10 +581,11 @@ impl GameService {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
                                     let mut page_info: Option<PageInfo> = None;
                                     loop {
+                                        let access_token = game_repository::get_marketing_access_token(&mysql, &adv_token_copy.advertiser_id).await;
+                                        adv_token_copy.access_token = access_token;
                                         page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page_info, 1000).await;
-                                        if let Some(mut pi) = page_info {
-                                            if pi.page < pi.total_page {
-                                                pi.page = pi.page + 1;
+                                        if let Some(pi) = page_info {
+                                            if pi.page <= pi.total_page {
                                                 page_info = Some(pi);
                                             } else {
                                                 break;
@@ -793,8 +794,9 @@ impl GameService {
         
                         println!("query_advertiser_reports use {}", self.timestamp() - now);
         
-                        // let page_info = &data.page_info;
-                        return Some(data.page_info);
+                        let mut page_info = data.page_info;
+                        page_info.page = page_info.page + 1;
+                        return Some(page_info);
                         // println!("query_advertiser_reports page: {}, total_page: {}", page, &page_info.total_page);
                         // if page < page_info.total_page {
                         //     // self.query_advertiser_reports(pool, advertiser, start_date, end_date, page + 1, page_size).await;
@@ -831,13 +833,13 @@ impl GameService {
             Ok(v) => {
                 for adv in v {
                     println!("query_ads_reports {}", adv.client_id);
-                    if let Some(access_token) = adv.access_token {
-                        let mut page_info: Option<EarningPageInfo> = None;
-                        loop {
-                            page_info = self.query_ads_reports_by_token(&pool, today, &adv.client_id, &access_token, page_info, 1000).await;
-                            if let Some(mut pi) = page_info {
-                                if pi.page < pi.total_page {
-                                    pi.page = pi.page + 1;
+
+                    let mut page_info: Option<EarningPageInfo> = None;
+                    loop {
+                        if let Some(access_token) = game_repository::get_ads_access_token(pool, &adv.client_id).await {
+                            page_info = self.query_ads_reports_by_token(pool, today, &adv.client_id, &access_token, page_info, 1000).await;
+                            if let Some(pi) = page_info {
+                                if pi.page <= pi.total_page {
                                     page_info = Some(pi);
                                 } else {
                                     break;
@@ -845,6 +847,8 @@ impl GameService {
                             } else {
                                 break;
                             }
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -928,7 +932,8 @@ impl GameService {
                 println!("use {}", self.timestamp() - now);
 
 
-                let page_info = reports.data.page_info;
+                let mut page_info = reports.data.page_info;
+                page_info.page = page_info.page + 1;
                 return Some(page_info);
                 // if page_info.page < page_info.total_page {
                 //     self.query_ads_reports_by_token(pool, access_token, page_info.page + 1, page_size);

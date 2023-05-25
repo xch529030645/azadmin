@@ -629,3 +629,35 @@ pub async fn get_ads_accounts(pool: &Pool<MySql>) -> Option<Vec<AdsAccount>> {
             }
         }
 }
+
+pub async fn get_ads_access_token(pool: &Pool<MySql>, client_id: &String) -> Option<String> {
+    let rs = sqlx::query("SELECT access_token FROM ads_account WHERE client_id=?")
+        .bind(client_id)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let a: String = v.get(0);
+            Some(a)
+        },
+        Err(e) => {
+            print!("get_ads_access_token: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_marketing_access_token(pool: &Pool<MySql>, advertiser_id: &String) -> Option<String> {
+    let rs = sqlx::query("SELECT access_token FROM advertisers WHERE advertiser_id=?")
+        .bind(advertiser_id)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let a: String = v.get(0);
+            Some(a)
+        },
+        Err(e) => {
+            print!("get_marketing_access_token: {}", e);
+            None
+        }
+    }
+}
