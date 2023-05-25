@@ -50,8 +50,6 @@ async fn main() -> std::io::Result<()> {
     .connect(&get_mysql_connect_url(&server_config))
     .await.unwrap_or_else(|_| { std::process::exit(0) });
 
-    println!("start 1");
-
     if server_config.profiles.eq("prod") {
         println!("prod");
         actix_rt::spawn(async move {

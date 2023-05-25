@@ -166,13 +166,13 @@ pub async fn check_access_token(pool: &Pool<MySql>, game_service:&GameService) {
 }
 
 pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
-    println!("query_reports");
-    // let s = game_service.clone();
-    // let p = pool.clone();
-    // actix_rt::spawn(async move {
-    //     s.query_reports(&p, &Local::now(), &Local::now()).await;
-    // });
-    game_service.query_reports(&pool, &Local::now(), &Local::now()).await;
+    // println!("query_reports");
+    let s = game_service.clone();
+    let p = pool.clone();
+    actix_rt::spawn(async move {
+        s.query_reports(&p, &Local::now(), &Local::now()).await;
+    });
+    // game_service.query_reports(&pool, &Local::now(), &Local::now()).await;
 
 }
 
