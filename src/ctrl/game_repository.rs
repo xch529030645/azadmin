@@ -664,7 +664,7 @@ pub async fn get_marketing_access_token(pool: &Pool<MySql>, advertiser_id: &Stri
 
 pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToken, list: &Vec<ResReportVo>)  {
     let mut placeholders: Vec<&str> = vec![];
-    for item in list {
+    for _ in list {
         placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     }
 

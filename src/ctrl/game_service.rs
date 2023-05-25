@@ -697,7 +697,6 @@ impl GameService {
                 if reports.code == "0" {
                     // let mut sqls = Vec::<String>::new();
                     if let Some(data) = reports.data {
-                        let now = self.timestamp();
                         let list = data.list;
                         let mut data_list: Vec<ResReportVo> = vec![];
                         for item in list {
@@ -706,7 +705,11 @@ impl GameService {
                             }
                         }
 
-                        game_repository::save_marketing_reports(pool, &advertiser, &data_list).await;
+                        if !data_list.is_empty() {
+                            let now = self.timestamp();
+                            game_repository::save_marketing_reports(pool, &advertiser, &data_list).await;
+                            println!("query_advertiser_reports use {}", self.timestamp() - now);
+                        }
                         
 
                         /*
@@ -808,7 +811,6 @@ impl GameService {
                             }
                         }
                          */
-                        println!("query_advertiser_reports use {}", self.timestamp() - now);
         
                         let mut page_info = data.page_info;
                         page_info.page = page_info.page + 1;
