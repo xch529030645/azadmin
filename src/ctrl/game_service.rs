@@ -629,12 +629,15 @@ impl GameService {
                 let mut thread_headlers = vec![];
                 for adv in &v {
                     if !&days_range.is_empty() {
-                        for days in days_range.clone() {
-                            let mut adv_token_copy = adv.clone();
-                            let mysql = pool.clone();
-                            let service = self.clone();
-                            // let record_date = end_date.clone();
-                            let handle = actix_rt::spawn(async move {
+                        let mut adv_token_copy = adv.clone();
+                        let mysql = pool.clone();
+                        let service = self.clone();
+                        let days_range_copy = days_range.clone();
+                        let handle = actix_rt::spawn(async move {
+                            for days in days_range_copy {
+                                
+                                // let record_date = end_date.clone();
+                                
                                 // let service = GameService::create();
                                 // let mut app_package_names: HashSet<String> = HashSet::new();
                                 for date in days {
@@ -660,9 +663,10 @@ impl GameService {
                                 
                                 // service.save_unknown_package_names(&mysql, &app_package_names).await;
                                 
-                            });
-                            thread_headlers.push(handle);
-                        }
+                            }
+
+                        });
+                        thread_headlers.push(handle);
                     }
                 }
                 for handle in thread_headlers {
