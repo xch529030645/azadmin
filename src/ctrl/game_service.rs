@@ -64,6 +64,10 @@ impl GameService {
     pub async fn get_admin_advertisers(&self, pool: &Pool<MySql>) -> Option<Vec<AdminAdvertiser>> {
         game_repository::get_admin_advertisers(pool).await
     }
+
+    pub async fn save_admin_advertisers(&self, pool: &Pool<MySql>, param: &ReqSaveAdminAdvertiser) -> i32 {
+        game_repository::save_admin_advertisers(pool, param).await
+    }
     
     pub async fn get_app_gallery(&self, pool: &Pool<MySql>) -> Option<Vec<AppGallery>> {
         let rs = sqlx::query_as::<_, AppGallery>("SELECT * FROM ads_account")

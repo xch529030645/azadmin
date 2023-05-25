@@ -919,7 +919,7 @@ pub async fn get_admin(pool: &Pool<MySql>) -> Option<Vec<Admin>> {
 }
 
 pub async fn get_admin_advertisers(pool: &Pool<MySql>) -> Option<Vec<AdminAdvertiser>> {
-    let rs = sqlx::query_as::<_, AdminAdvertiser>("SELECT * FROM admin_advertisers")
+    let rs = sqlx::query_as::<_, AdminAdvertiser>("SELECT a.*, b.remark FROM admin_advertisers a LEFT JOIN advertisers b ON a.advertiser_id=b.advertiser_id")
             .fetch_all(pool).await;
     match rs {
         Ok(v) => Some(v),
@@ -928,4 +928,20 @@ pub async fn get_admin_advertisers(pool: &Pool<MySql>) -> Option<Vec<AdminAdvert
             None
         }
     }
+}
+
+pub async fn save_admin_advertisers(pool: &Pool<MySql>, param: &ReqSaveAdminAdvertiser) -> i32 {
+    let advertisers = param.advertisers.join(",");
+    sqlx::query(format!("DELETE FROM admin_advertisers WHERE uid=? OR FIND_IN_SET(advertiser_id, '{}')", advertisers).as_str())
+            .bind(&param.uid)
+            .execute(pool).await;
+    
+    
+    for advertiser_id in &param.advertisers {
+        sqlx::query("INSERT INTO admin_advertisers (uid, advertiser_id) VALUES (?,?)")
+            .bind(&param.uid)
+            .bind(advertiser_id)
+            .execute(pool).await;
+    }
+    0
 }

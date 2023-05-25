@@ -325,10 +325,18 @@ pub struct Admin {
     pub role: i32,
 }
 
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ReqSaveAdminAdvertiser {
+    pub uid: i32,
+    pub advertisers: Vec<String>
+}
+
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct AdminAdvertiser {
     pub uid: i32,
     pub advertiser_id: String,
+    pub remark: Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
