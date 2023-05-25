@@ -665,7 +665,7 @@ impl GameService {
         let list = game_repository::calc_ads_daily_release_reports_group_by_advertiser_by_date(pool, &today).await;
         if let Some(list) = list {
             let now = self.timestamp();
-            let mut data_list: Vec<AdsDailyReleaseReport> = vec![];
+            let mut data_list: Vec<AdsDailyReleaseReportAdv> = vec![];
             for vo in list {
                 if vo.cost == 0_f64 && vo.active == 0 && vo.iaa == 0_f64 {
                     continue;

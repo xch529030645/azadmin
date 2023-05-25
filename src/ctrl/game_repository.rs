@@ -104,8 +104,7 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
                         cost: item.cost,
                         active: item.active,
                         iaa: item.iaa,
-                        country: String::from("ALL"),
-                        advertiser_id: None
+                        country: String::from("ALL")
                     };
                     map.insert(key, vo);
                 } else {
@@ -136,21 +135,21 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
     }
 }
 
-pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
-    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country, advertiser_id FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country, advertiser_id")
+pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReportAdv>> {
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReportAdv>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country, advertiser_id FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country, advertiser_id")
     .bind(&date)
     .fetch_all(pool).await;
     match rs {
         Ok(list) => {
-            let mut ret: Vec<AdsDailyReleaseReport> = Vec::new();
-            let mut map: HashMap<String, AdsDailyReleaseReport> = HashMap::new();
+            let mut ret: Vec<AdsDailyReleaseReportAdv> = Vec::new();
+            let mut map: HashMap<String, AdsDailyReleaseReportAdv> = HashMap::new();
             for item in list {
                 let key = format!("{}-{}-{:?}", item.package_name, item.stat_datetime, item.advertiser_id);
                 // if item.package_name.eq("com.onlinepet.huawei") {
                 //     println!("{} {} {}", item.package_name, item.country, item.cost);
                 // }
                 if !map.contains_key(&key) {
-                    let vo = AdsDailyReleaseReport {
+                    let vo = AdsDailyReleaseReportAdv {
                         package_name: item.package_name.clone(),
                         stat_datetime: item.stat_datetime.clone(),
                         cost: item.cost,
@@ -161,7 +160,7 @@ pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &P
                     };
                     map.insert(key, vo);
                 } else {
-                    let vo: &mut AdsDailyReleaseReport = map.get_mut(&key).unwrap();
+                    let vo: &mut AdsDailyReleaseReportAdv = map.get_mut(&key).unwrap();
                     vo.cost += item.cost;
                     vo.active += item.active;
                     vo.iaa += item.iaa;
@@ -314,7 +313,7 @@ pub async fn get_app_roas(pool: &Pool<MySql>, param: &ReqRoas) -> Option<Vec<Ads
     match rs {
         Ok(list) => Some(list),
         Err(e) => {
-            println!("get_ads_daily_release_reports_by_date err : {}", e);
+            println!("get_app_roas err : {}", e);
             None
         }
     }
@@ -394,7 +393,7 @@ pub async fn get_countries(pool: &Pool<MySql>) -> Option<Vec<Country>> {
     match rs {
         Ok(list) => Some(list),
         Err(e) => {
-            println!("get_ads_daily_release_reports_by_date err : {}", e);
+            println!("get_countries err : {}", e);
             None
         }
     }
@@ -824,7 +823,7 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
     }
 }
 
-pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, data_list: &Vec<AdsDailyReleaseReport>, record_date: &str) {
+pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, data_list: &Vec<AdsDailyReleaseReportAdv>, record_date: &str) {
     let mut sql = "INSERT INTO azadmin.ads_advertiser_daily_release_reports
     (advertiser_id, package_name, cost, active, iaa, stat_datetime, record_datetime, country)
     VALUES ".to_string();

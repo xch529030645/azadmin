@@ -216,8 +216,18 @@ pub struct AdsDailyReleaseReport {
     pub cost: f64,
     pub active: i32,
     pub iaa: f64,
+    pub country: String
+}
+
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct AdsDailyReleaseReportAdv {
+    pub package_name: String,
+    pub stat_datetime: String,
+    pub cost: f64,
+    pub active: i32,
+    pub iaa: f64,
     pub country: String,
-    pub advertiser_id: Option<String>
+    pub advertiser_id: String
 }
 
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
