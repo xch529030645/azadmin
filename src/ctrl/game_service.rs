@@ -97,6 +97,11 @@ impl GameService {
                 conds.push("a.country='ALL'".to_string());
             }
         }
+        if let Some(ads_accounts) = &params.ads_accounts {
+            if !ads_accounts.is_empty() {
+                conds.push(format!("FIND_IN_SET(b.client_id, '{}')", ads_accounts));
+            }
+        }
         conds
     }
 
