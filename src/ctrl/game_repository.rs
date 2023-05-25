@@ -353,8 +353,9 @@ pub async fn add_advertiser(pool: &Pool<MySql>, advertiser_id: &String, client_i
 
 pub async fn update_advertiser_remark(pool: &Pool<MySql>, param: &ReqAdvRemark) -> i32 {
     let rs = sqlx::query("UPDATE advertisers SET remark=? WHERE advertiser_id=?")
-            .bind(&param.advertiser_id)
-            .execute(pool).await;
+        .bind(&param.remark)
+        .bind(&param.advertiser_id)
+        .execute(pool).await;
         
     match rs {
         Ok(v) => 0,
