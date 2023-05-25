@@ -622,6 +622,7 @@ impl GameService {
                     for days in &days_range {
                         for date in days {
                             self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
+                            self.calc_advertiser_release_daily_reports(&pool, &date, &end_date).await;
                         }
                     }
                 }
@@ -657,6 +658,22 @@ impl GameService {
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
             }
             println!("calc_release_daily_reports use {}", self.timestamp() - now);
+        }
+    }
+
+    async fn calc_advertiser_release_daily_reports(&self, pool: &Pool<MySql>, today: &String, record_date: &String) {
+        let list = game_repository::calc_ads_daily_release_reports_group_by_advertiser_by_date(pool, &today).await;
+        if let Some(list) = list {
+            let now = self.timestamp();
+            let mut data_list: Vec<AdsDailyReleaseReport> = vec![];
+            for vo in list {
+                if vo.cost == 0_f64 && vo.active == 0 && vo.iaa == 0_f64 {
+                    continue;
+                }
+                data_list.push(vo);
+            }
+            game_repository::save_daily_release_report_group_by_advertiser(pool, &data_list, record_date).await;
+            println!("calc_advertiser_release_daily_reports use {}", self.timestamp() - now);
         }
     }
 

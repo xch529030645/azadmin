@@ -105,6 +105,7 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
                         active: item.active,
                         iaa: item.iaa,
                         country: String::from("ALL"),
+                        advertiser_id: None
                     };
                     map.insert(key, vo);
                 } else {
@@ -130,6 +131,58 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
         },
         Err(e) => {
             println!("get_ads_daily_release_reports_by_date err : {}", e);
+            None
+        }
+    }
+}
+
+pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReport>> {
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReport>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country, advertiser_id FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country, advertiser_id")
+    .bind(&date)
+    .fetch_all(pool).await;
+    match rs {
+        Ok(list) => {
+            let mut ret: Vec<AdsDailyReleaseReport> = Vec::new();
+            let mut map: HashMap<String, AdsDailyReleaseReport> = HashMap::new();
+            for item in list {
+                let key = format!("{}-{}-{:?}", item.package_name, item.stat_datetime, item.advertiser_id);
+                // if item.package_name.eq("com.onlinepet.huawei") {
+                //     println!("{} {} {}", item.package_name, item.country, item.cost);
+                // }
+                if !map.contains_key(&key) {
+                    let vo = AdsDailyReleaseReport {
+                        package_name: item.package_name.clone(),
+                        stat_datetime: item.stat_datetime.clone(),
+                        cost: item.cost,
+                        active: item.active,
+                        iaa: item.iaa,
+                        country: String::from("ALL"),
+                        advertiser_id: item.advertiser_id.clone()
+                    };
+                    map.insert(key, vo);
+                } else {
+                    let vo: &mut AdsDailyReleaseReport = map.get_mut(&key).unwrap();
+                    vo.cost += item.cost;
+                    vo.active += item.active;
+                    vo.iaa += item.iaa;
+                }
+                ret.push(item);
+            }
+
+            for k in map {
+                // if k.1.package_name.eq("com.onlinepet.huawei") {
+                //     println!("total {} {} {}", &k.1.package_name, &k.1.country, &k.1.cost);
+                // }
+                // println!("total cost : {} - {}", advertiser_id, &k.1.cost);
+                ret.push(k.1);
+            }
+            
+            // list.append(vo);
+            // Some(list)
+            Some(ret)
+        },
+        Err(e) => {
+            println!("calc_ads_daily_release_reports_group_by_advertiser_by_date err : {}", e);
             None
         }
     }
@@ -767,6 +820,45 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
         Err(e) => {
             println!("azadmin.reports err {}", e);
             println!("{}", cmd);
+        }
+    }
+}
+
+pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, data_list: &Vec<AdsDailyReleaseReport>, record_date: &str) {
+    let mut sql = "INSERT INTO azadmin.ads_advertiser_daily_release_reports
+    (advertiser_id, package_name, cost, active, iaa, stat_datetime, record_datetime, country)
+    VALUES ".to_string();
+
+    let mut placeholder: Vec<&str> = vec![];
+    for _ in data_list {
+        placeholder.push("(?, ?, ?, ?, ?, ?, ?, ?)");
+    }
+
+    sql += placeholder.join(",").as_str();
+    sql += "ON DUPLICATE KEY UPDATE cost=VALUES(cost),active=VALUES(active),iaa=VALUES(iaa)";
+
+    let mut query = sqlx::query(sql.as_str());
+
+
+    for vo in data_list {
+        query = query.bind(&vo.advertiser_id)
+        .bind(&vo.package_name)
+        .bind(&vo.cost)
+        .bind(&vo.active)
+        .bind(&vo.iaa)
+        .bind(&vo.stat_datetime)
+        .bind(&record_date)
+        .bind(&vo.country)
+        ;
+    }
+    
+    // let cmd = query.sql();
+    let rs = query.execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("save_daily_release_report_group_by_advertiser {}", e);
+            // println!("{}", cmd);
         }
     }
 }
