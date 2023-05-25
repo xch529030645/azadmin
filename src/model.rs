@@ -325,6 +325,11 @@ pub struct Admin {
     pub role: i32,
 }
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct AdminAdvertiser {
+    pub uid: i32,
+    pub advertiser_id: String,
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {

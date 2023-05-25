@@ -121,6 +121,8 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::login_admin)
             .service(game_controller::update_advertiser_remark)
             .service(game_controller::save_admin)
+            .service(game_controller::get_admin)
+            .service(game_controller::get_admin_advertisers)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?

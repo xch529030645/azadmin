@@ -45,10 +45,23 @@ pub async fn update_advertiser_remark(_: UserData, data: web::Data<AppState>, ga
 }
 
 #[post("/azadmin/save_admin")]
-pub async fn save_admin(_: UserData, data: web::Data<AppState>, game_service: &GameService, param: web::Json<Admin>) -> impl Responder {
+pub async fn save_admin(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<Admin>) -> impl Responder {
     let err = game_service.save_admin(&data.pool, &param.0).await;
     return Results::err(err);
 }
+
+#[post("/azadmin/get_admin")]
+pub async fn get_admin(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let list = game_service.get_admin(&data.pool).await;
+    return Results::done(&list.as_ref());
+}
+
+#[post("/azadmin/get_admin_advertisers")]
+pub async fn get_admin_advertisers(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let list = game_service.get_admin_advertisers(&data.pool).await;
+    return Results::done(&list.as_ref());
+}
+
 
 #[post("/azadmin/get_app_gallery")]
 pub async fn get_app_gallery(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {

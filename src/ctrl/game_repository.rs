@@ -905,3 +905,27 @@ pub async fn save_admin(pool: &Pool<MySql>, param: &Admin) -> i32 {
         }
     }
 }
+
+pub async fn get_admin(pool: &Pool<MySql>) -> Option<Vec<Admin>> {
+    let rs = sqlx::query_as::<_, Admin>("SELECT * FROM admin")
+            .fetch_all(pool).await;
+    match rs {
+        Ok(v) => Some(v),
+        Err(e) => {
+            print!("get_admin: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_admin_advertisers(pool: &Pool<MySql>) -> Option<Vec<AdminAdvertiser>> {
+    let rs = sqlx::query_as::<_, AdminAdvertiser>("SELECT * FROM admin_advertisers")
+            .fetch_all(pool).await;
+    match rs {
+        Ok(v) => Some(v),
+        Err(e) => {
+            print!("get_admin: {}", e);
+            None
+        }
+    }
+}

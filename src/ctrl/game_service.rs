@@ -57,6 +57,14 @@ impl GameService {
         game_repository::save_admin(pool, param).await
     }
 
+    pub async fn get_admin(&self, pool: &Pool<MySql>) -> Option<Vec<Admin>> {
+        game_repository::get_admin(pool).await
+    }
+
+    pub async fn get_admin_advertisers(&self, pool: &Pool<MySql>) -> Option<Vec<AdminAdvertiser>> {
+        game_repository::get_admin_advertisers(pool).await
+    }
+    
     pub async fn get_app_gallery(&self, pool: &Pool<MySql>) -> Option<Vec<AppGallery>> {
         let rs = sqlx::query_as::<_, AppGallery>("SELECT * FROM ads_account")
         .fetch_all(pool)
@@ -770,16 +778,28 @@ impl GameService {
                     // let mut sqls = Vec::<String>::new();
                     if let Some(data) = reports.data {
                         let list = data.list;
-                        let mut data_list: Vec<ResReportVo> = vec![];
+                        let mut data_list: Vec<Vec<ResReportVo>> = vec![];
+                        let mut sub_list: Vec<ResReportVo> = vec![];
+                        let mut idx = 0;
                         for item in list {
                             if !self.is_zero_report(&item) {
-                                data_list.push(item);
+                                idx = idx + 1;
+                                sub_list.push(item);
+                                if idx >= 30 {
+                                    data_list.push(sub_list);
+                                    sub_list = vec![];
+                                }
                             }
+                        }
+                        if !sub_list.is_empty() {
+                            data_list.push(sub_list);
                         }
 
                         if !data_list.is_empty() {
                             let now = self.timestamp();
-                            game_repository::save_marketing_reports(pool, &advertiser, &data_list).await;
+                            for list in data_list {
+                                game_repository::save_marketing_reports(pool, &advertiser, &list).await;
+                            }
                             println!("query_advertiser_reports use {}", self.timestamp() - now);
                         }
                         
