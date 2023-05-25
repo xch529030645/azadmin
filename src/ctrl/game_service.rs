@@ -102,23 +102,42 @@ impl GameService {
                 conds.push(format!("FIND_IN_SET(b.client_id, '{}')", ads_accounts));
             }
         }
+        if let Some(advertisers) = &params.advertisers {
+            if !advertisers.is_empty() {
+                conds.push(format!("FIND_IN_SET(a.advertiser_id, '{}')", advertisers));
+            }
+        }
         conds
     }
 
     async fn query_release_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports, conds: &Vec<String>) -> Option<Vec<ResAdsReports>>{
+        let table = if let Some(advertisers) = &params.advertisers {
+            if advertisers.is_empty() {
+                "ads_daily_release_reports"
+            } else {
+                "ads_advertiser_daily_release_reports"
+            }
+        } else {
+            "ads_daily_release_reports"
+        };
+        let left_join_cond = if table.eq("ads_daily_release_reports") {
+            ""
+        } else {
+            "AND a.advertiser_id=d.advertiser_id"
+        };
         let app_name_format = if params.group_by_country {
             "CONCAT(b.app_name,'-',a.country) AS app_name"
         } else {
             "b.app_name"
         };
         let mut sql = format!("SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
-        FROM ads_daily_release_reports a 
+        FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
-        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country 
+        LEFT JOIN ads_daily_release_reports d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {}
         LEFT JOIN um_apps e ON e.package_name = a.package_name 
         LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
-        LEFT JOIN ads_account g ON b.client_id=g.client_id ", app_name_format);
+        LEFT JOIN ads_account g ON b.client_id=g.client_id ", app_name_format, table, left_join_cond);
         
 
         if !conds.is_empty() {
