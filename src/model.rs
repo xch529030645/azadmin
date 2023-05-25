@@ -94,6 +94,12 @@ pub struct ReqAddAdv {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqAdvRemark {
+    pub advertiser_id: String,
+    pub remark: String
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqAddGallery {
     pub client_id: String,
     pub client_secret: String,
@@ -182,7 +188,8 @@ pub struct ReleaseToken {
     pub refresh_token: Option<String>,
     pub expires_in: i64,
     pub client_id: Option<String>,
-    pub secret: Option<String>
+    pub secret: Option<String>,
+    pub remark: Option<String>,
 }
 
 #[derive(sqlx::FromRow, Deserialize, Serialize)]

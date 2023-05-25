@@ -38,6 +38,12 @@ pub async fn add_advertiser(_: UserData, data: web::Data<AppState>, game_service
     return Results::err(err);
 }
 
+#[post("/azadmin/update_advertiser_remark")]
+pub async fn update_advertiser_remark(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqAdvRemark>) -> impl Responder {
+    let err = game_service.update_advertiser_remark(&data.pool, &param.0).await;
+    return Results::err(err);
+}
+
 #[post("/azadmin/get_app_gallery")]
 pub async fn get_app_gallery(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let list = game_service.get_app_gallery(&data.pool).await;

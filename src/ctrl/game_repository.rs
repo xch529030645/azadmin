@@ -351,6 +351,20 @@ pub async fn add_advertiser(pool: &Pool<MySql>, advertiser_id: &String, client_i
     }
 }
 
+pub async fn update_advertiser_remark(pool: &Pool<MySql>, param: &ReqAdvRemark) -> i32 {
+    let rs = sqlx::query("UPDATE advertisers SET remark=? WHERE advertiser_id=?")
+            .bind(&param.advertiser_id)
+            .execute(pool).await;
+        
+    match rs {
+        Ok(v) => 0,
+        Err(e) => {
+            println!("update_advertiser_remark err {}", e);
+            1
+        }
+    }
+}
+
 pub async fn add_app_gallery(pool: &Pool<MySql>,client_id: &String, client_secret: &String, connect_client_id: &Option<String>, connect_client_secret: &Option<String>, remark: &Option<String>) -> i32 {
     let rs = sqlx::query("INSERT INTO ads_account
         (client_id, client_secret, connect_client_id, connect_client_secret, remark)
