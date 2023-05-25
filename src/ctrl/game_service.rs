@@ -1134,42 +1134,60 @@ impl GameService {
         let start_date = &start.format("%Y-%m-%d").to_string();
         let end_date = &end.format("%Y-%m-%d").to_string();
 
+
+        let is_executed = game_repository::is_daily_task_executed(pool, &end_date, 3).await;
+
+        if !is_executed {
+            let now = self.timestamp();
+
+            let apps = game_repository::get_um_apps_with_package_name(pool).await;
+            if let Some(apps) = apps {
+                for app in apps {
+                    let rs = umeng_api::get_retentions(&app.appkey, start_date, end_date).await;
+                    if let Some(info_list) = rs {
+                        game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
+                    }
+
+                    let rs = umeng_api::get_duration(&app.appkey, end_date).await;
+                    if let Some(rs) = rs {
+                        game_repository::save_app_umeng_duration(pool, &app.appkey, end_date, rs.average).await;
+                    }
+                }
+            }
+            println!("query_last_30_umeng_retentions use {}", self.timestamp() - now);
+
+            game_repository::execute_daily_task_done(pool, &end_date, 3).await;
+            
+        }
         // let ret = end.checked_sub_days(Days::new(1)).unwrap();
         // let ret_date = &ret.format("%Y-%m-%d").to_string();
 
-        let now = self.timestamp();
-
-        let apps = game_repository::get_um_apps_with_package_name(pool).await;
-        if let Some(apps) = apps {
-            for app in apps {
-                let rs = umeng_api::get_retentions(&app.appkey, start_date, end_date).await;
-                if let Some(info_list) = rs {
-                    game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
-                }
-
-                let rs = umeng_api::get_duration(&app.appkey, end_date).await;
-                if let Some(rs) = rs {
-                    game_repository::save_app_umeng_duration(pool, &app.appkey, end_date, rs.average).await;
-                }
-            }
-        }
-        println!("query_last_30_umeng_retentions use {}", self.timestamp() - now);
+        
 
     }
 
     pub async fn query_umeng_duration(&self, pool: &Pool<MySql>) {
-        let now = self.timestamp();
+        let today = Local::now().format("%Y-%m-%d").to_string();
 
-        let rs = game_repository::get_umeng_app_without_duration(pool).await;
-        if let Some(rs) = rs {
-            for app in rs {
-                let rs = umeng_api::get_duration(&app.appkey, &app.date).await;
-                if let Some(rs) = rs {
-                    game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+        let is_executed = game_repository::is_daily_task_executed(pool, &today, 4).await;
+
+        if !is_executed {
+            let now = self.timestamp();
+
+            let rs = game_repository::get_umeng_app_without_duration(pool).await;
+            if let Some(rs) = rs {
+                for app in rs {
+                    let rs = umeng_api::get_duration(&app.appkey, &app.date).await;
+                    if let Some(rs) = rs {
+                        game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+                    }
                 }
             }
+            println!("query_umeng_duration use {}", self.timestamp() - now);
+
+            game_repository::execute_daily_task_done(pool, &today, 4).await;
         }
-        println!("query_umeng_duration use {}", self.timestamp() - now);
+        
     }
 
     pub async fn get_earnings_reports(&self, pool: &Pool<MySql>, params: &ReqQueryEarningReports) -> Option<Vec<ResAdsEarningReports>> {
