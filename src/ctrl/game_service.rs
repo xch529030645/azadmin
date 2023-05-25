@@ -572,16 +572,17 @@ impl GameService {
                         days_range.push(days);
                     }
                 }
-                for adv in v {
-                    if !days_range.is_empty() {
+                let mut thread_headlers = vec![];
+                for adv in &v {
+                    if !&days_range.is_empty() {
                         for days in days_range.clone() {
                             let mut adv_token_copy = adv.clone();
                             let mysql = pool.clone();
                             let service = self.clone();
-                            let record_date = end_date.clone();
-                            actix_rt::spawn(async move {
+                            // let record_date = end_date.clone();
+                            let handle = actix_rt::spawn(async move {
                                 // let service = GameService::create();
-                                let mut app_package_names: HashSet<String> = HashSet::new();
+                                // let mut app_package_names: HashSet<String> = HashSet::new();
                                 for date in days {
                                     println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
                                     let mut page_info: Option<PageInfo> = None;
@@ -599,26 +600,32 @@ impl GameService {
                                             break;
                                         }
                                     }
-                                    service.calc_release_daily_reports(&mysql, &date, &record_date, &mut app_package_names).await;
+                                    // service.calc_release_daily_reports(&mysql, &date, &record_date, &mut app_package_names).await;
                                 }
 
                                 
-                                service.save_unknown_package_names(&mysql, &app_package_names).await;
-                                // if let Some(client_id) = &adv_token_copy.client_id {
-                                //     match &adv_token_copy.access_token {
-                                //         Some(access_token) => {
-                                //             service.query_package_app_id(&mysql, client_id, access_token, &app_package_names).await;
-                                //         },
-                                //         None => {}
-                                //     }
-                                // }
+                                // service.save_unknown_package_names(&mysql, &app_package_names).await;
                                 
                             });
-                            
+                            thread_headlers.push(handle);
                         }
                     }
                 }
-                
+                for handle in thread_headlers {
+                    if !handle.is_finished() {
+                        handle.await;
+                    }
+                }
+                println!("start calc_release_daily_reports");
+                let mut app_package_names: HashSet<String> = HashSet::new();
+                if !&days_range.is_empty() {
+                    for days in &days_range {
+                        for date in days {
+                            self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
+                        }
+                    }
+                }
+                self.save_unknown_package_names(&pool, &app_package_names).await;
             },
             Err(e) => {
                 println!("query_reports err: {}", e);
@@ -981,7 +988,7 @@ impl GameService {
                 }
             },
             Err(e) => {
-                println!("p_calc_ads_daily_reports err : {}", e);
+                println!("calc_ads_daily_reports err : {}", e);
             }
         }
     }

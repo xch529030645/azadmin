@@ -3,7 +3,7 @@ use std::{fs, io::Write, time::{SystemTime, UNIX_EPOCH}};
 use actix_files::NamedFile;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, Result, http::header::{ContentDisposition, DispositionType, DispositionParam}};
 use chrono::Local;
-use sqlx::{Pool, MySql};
+use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
 use actix_multipart::{
     form::{
         tempfile::{TempFile, TempFileConfig},
@@ -165,8 +165,12 @@ pub async fn check_access_token(pool: &Pool<MySql>, game_service:&GameService) {
     game_service.check_access_token(pool).await;
 }
 
-pub async fn query_reports(pool: &Pool<MySql>, game_service:&GameService) {
-    game_service.query_reports(pool, &Local::now(), &Local::now()).await;
+pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
+    let s = game_service.clone();
+    let p = pool.clone();
+    actix_rt::spawn(async move {
+        s.query_reports(&p, &Local::now(), &Local::now()).await;
+    });
 }
 
 pub async fn query_ads_reports(pool: &Pool<MySql>, game_service:&GameService) {

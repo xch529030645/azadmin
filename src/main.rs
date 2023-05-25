@@ -6,7 +6,7 @@ mod ctrl;
 mod lib;
 
 use actix_cors::Cors;
-use actix_rt::time;
+use actix_rt::time::{self, sleep};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use model::ServerConfig;
 use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
@@ -78,8 +78,8 @@ async fn main() -> std::io::Result<()> {
                 game_controller::check_package_app_id(&pool, &game_service).await
             }
         });
+
     }
-    
 
     // 客户端ID: 108128867
     // 密钥: 9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54
