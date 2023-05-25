@@ -2,7 +2,7 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::HashMap, vec};
 use chrono::{Local, DateTime, Days};
 use sqlx::{Pool, MySql, Row};
 
-use crate::model::*;
+use crate::{model::*, lib::response::ResReportVo};
 
 // use crate::{lib::{server_api, req::{AuthorizationCode}, response::*}, model::*, auth};
 
@@ -658,6 +658,113 @@ pub async fn get_marketing_access_token(pool: &Pool<MySql>, advertiser_id: &Stri
         Err(e) => {
             print!("get_marketing_access_token: {}", e);
             None
+        }
+    }
+}
+
+pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToken, list: &Vec<ResReportVo>)  {
+    let mut placeholders: Vec<&str> = vec![];
+    for item in list {
+        placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    }
+
+    let mut sql = "INSERT INTO azadmin.reports
+        (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, show_count, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
+        VALUES ".to_string();
+    sql += placeholders.join(",").as_str();
+    sql += " ON DUPLICATE KEY UPDATE show_count=VALUES(show_count),
+    click_count=VALUES(click_count),
+    cpc=VALUES(cpc),
+    thousand_show_cost=VALUES(thousand_show_cost),
+    cost=VALUES(cost),
+    download_count=VALUES(download_count),
+    download_cost=VALUES(download_cost),
+    install_count=VALUES(install_count),
+    install_cost=VALUES(install_cost),
+    active_count=VALUES(active_count),
+    active_cost=VALUES(active_cost),
+    register_count=VALUES(register_count),
+    register_cost=VALUES(register_cost),
+    retain_count=VALUES(retain_count),
+    retain_cost=VALUES(retain_cost),
+    three_day_retain_count=VALUES(three_day_retain_count),
+    three_day_retain_cost=VALUES(three_day_retain_cost),
+    subscribe_count=VALUES(subscribe_count),
+    subscribe_cost=VALUES(subscribe_cost),
+    seven_day_retain_count=VALUES(seven_day_retain_count),
+    seven_day_retain_cost=VALUES(seven_day_retain_cost),
+    publisher_real_price_one_day=VALUES(publisher_real_price_one_day),
+    ad_income_one_day_ltv_hms=VALUES(ad_income_one_day_ltv_hms),
+    ad_income_two_day_ltv_hms=VALUES(ad_income_two_day_ltv_hms),
+    ad_income_three_day_ltv_hms=VALUES(ad_income_three_day_ltv_hms),
+    ad_income_seven_day_ltv_hms=VALUES(ad_income_seven_day_ltv_hms),
+    ad_income_fifteen_day_ltv_hms=VALUES(ad_income_fifteen_day_ltv_hms),
+    ad_income_thirty_day_ltv_hms=VALUES(ad_income_thirty_day_ltv_hms),
+    ad_income_one_day_roi=VALUES(ad_income_one_day_roi),
+    ad_income_two_day_roi=VALUES(ad_income_two_day_roi),
+    ad_income_three_day_roi=VALUES(ad_income_three_day_roi),
+    ad_income_seven_day_roi=VALUES(ad_income_seven_day_roi),
+    ad_income_fifteen_day_roi=VALUES(ad_income_fifteen_day_roi),
+    ad_income_thirty_day_roi=VALUES(ad_income_thirty_day_roi),
+    attribution_income_iaa=VALUES(attribution_income_iaa),
+    attribution_income_iap_normalized=VALUES(attribution_income_iap_normalized)";
+
+    let mut query = sqlx::query(sql.as_str());
+
+    for vo in list {
+        let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
+        query = query.bind(&advertiser.advertiser_id)
+        .bind(&vo.adgroup_id)
+        .bind(&vo.adgroup_name)
+        .bind(&vo.campaign_id)
+        .bind(&vo.campaign_name)
+        .bind(&vo.package_name)
+        .bind(stat_datetime)
+        .bind(&vo.show_count)
+        .bind(&vo.click_count)
+        .bind(&vo.cpc)
+        .bind(&vo.thousand_show_cost)
+        .bind(&vo.cost)
+        .bind(&vo.download_count)
+        .bind(&vo.download_cost)
+        .bind(&vo.install_count)
+        .bind(&vo.install_cost)
+        .bind(&vo.active_count_normalized)
+        .bind(&vo.active_cost_normalized)
+        .bind(&vo.register_count)
+        .bind(&vo.register_cost)
+        .bind(&vo.retain_count_normalized)
+        .bind(&vo.retain_cost_normalized)
+        .bind(&vo.three_day_retain_count)
+        .bind(&vo.three_day_retain_cost)
+        .bind(&vo.subscribe_count)
+        .bind(&vo.subscribe_cost)
+        .bind(&vo.seven_day_retain_count)
+        .bind(&vo.seven_day_retain_cost)
+        .bind(&vo.publisher_real_price_one_day)
+        .bind(&vo.ad_income_one_day_ltv_hms)
+        .bind(&vo.ad_income_two_day_ltv_hms)
+        .bind(&vo.ad_income_three_day_ltv_hms)
+        .bind(&vo.ad_income_seven_day_ltv_hms)
+        .bind(&vo.ad_income_fifteen_day_ltv_hms)
+        .bind(&vo.ad_income_thirty_day_ltv_hms)
+        .bind(&vo.ad_income_one_day_roi)
+        .bind(&vo.ad_income_two_day_roi)
+        .bind(&vo.ad_income_three_day_roi)
+        .bind(&vo.ad_income_seven_day_roi)
+        .bind(&vo.ad_income_fifteen_day_roi)
+        .bind(&vo.ad_income_thirty_day_roi)
+        .bind(&vo.attribution_income_iaa)
+        .bind(&vo.attribution_income_iap_normalized)
+        .bind(&vo.ad_position_id)
+        .bind(&vo.country);
+    }
+    
+    let rs = query.execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("azadmin.reports err {}", e);
         }
     }
 }

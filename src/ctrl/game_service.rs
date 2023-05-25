@@ -664,6 +664,26 @@ impl GameService {
     // }
     
 
+    fn is_zero_report(&self, vo: &ResReportVo) -> bool {
+        return vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.thousand_show_cost.parse::<f32>().unwrap() == 0_f32 && vo.cost.parse::<f32>().unwrap_or(0_f32) == 0_f32
+            && vo.download_count == 0 && vo.download_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.install_count == 0 && vo.install_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.active_count_normalized == 0 && vo.active_cost_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.register_count == 0 && vo.register_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.retain_count_normalized == 0 && vo.retain_cost_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.three_day_retain_count == 0 && vo.three_day_retain_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.subscribe_count == 0 && vo.subscribe_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.seven_day_retain_count == 0 && vo.seven_day_retain_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.publisher_real_price_one_day.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_one_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_two_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_three_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_seven_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_fifteen_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_thirty_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_one_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_two_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_three_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_seven_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_fifteen_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.ad_income_thirty_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.attribution_income_iaa.parse::<f32>().unwrap_or(0_f32) == 0_f32 
+            && vo.attribution_income_iap_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32;
+    }
     
     async fn query_advertiser_reports(&self, pool: &Pool<MySql>, advertiser: &ReleaseToken, start_date: &String, end_date: &String, page_info: Option<PageInfo>, page_size: i32) -> Option<PageInfo> {
         let page = match &page_info {
@@ -678,28 +698,20 @@ impl GameService {
                     // let mut sqls = Vec::<String>::new();
                     if let Some(data) = reports.data {
                         let now = self.timestamp();
-                        // data.list.as_mut().filter(predicate)
-                        for vo in data.list {
-                            if vo.show_count == 0 && vo.click_count == 0 && vo.cpc.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.thousand_show_cost.parse::<f32>().unwrap() == 0_f32 && vo.cost.parse::<f32>().unwrap_or(0_f32) == 0_f32
-                                && vo.download_count == 0 && vo.download_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.install_count == 0 && vo.install_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.active_count_normalized == 0 && vo.active_cost_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.register_count == 0 && vo.register_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.retain_count_normalized == 0 && vo.retain_cost_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.three_day_retain_count == 0 && vo.three_day_retain_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.subscribe_count == 0 && vo.subscribe_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.seven_day_retain_count == 0 && vo.seven_day_retain_cost.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.publisher_real_price_one_day.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_one_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_two_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_three_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_seven_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_fifteen_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_thirty_day_ltv_hms.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_one_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_two_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_three_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_seven_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.ad_income_fifteen_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.ad_income_thirty_day_roi.parse::<f32>().unwrap_or(0_f32) == 0_f32 && vo.attribution_income_iaa.parse::<f32>().unwrap_or(0_f32) == 0_f32 
-                                && vo.attribution_income_iap_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32 {
-                                continue;
+                        let list = data.list;
+                        let mut data_list: Vec<ResReportVo> = vec![];
+                        for item in list {
+                            if !self.is_zero_report(&item) {
+                                data_list.push(item);
                             }
+                        }
+
+                        game_repository::save_marketing_reports(pool, &advertiser, &data_list).await;
+                        
+
+                        /*
+                        for vo in data_list {
+                           
                             let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
                             let sql = "INSERT INTO azadmin.reports
                             (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, show_count, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
@@ -794,9 +806,8 @@ impl GameService {
                                     println!("azadmin.reports err {}", e);
                                 }
                             }
-                            // sqls.push(sql);
                         }
-        
+                         */
                         println!("query_advertiser_reports use {}", self.timestamp() - now);
         
                         let mut page_info = data.page_info;
@@ -809,8 +820,6 @@ impl GameService {
                     }
                     
                     
-                    // let cmds = sqls.join("\n");
-                    // let r = sqlx::query(cmds.as_str()).execute(pool).await;
                     
                 } else {
                     println!("query_advertiser_reports failed: {}", reports.message);
