@@ -1,6 +1,6 @@
 use std::{time::{SystemTime, UNIX_EPOCH}, collections::HashMap, vec};
 use chrono::{Local, DateTime, Days};
-use sqlx::{Pool, MySql, Row};
+use sqlx::{Pool, MySql, Row, Execute};
 
 use crate::{model::*, lib::response::ResReportVo};
 
@@ -669,10 +669,10 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
     }
 
     let mut sql = "INSERT INTO azadmin.reports
-        (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, show_count, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
+        (advertiser_id, adgroup_id, adgroup_name, campaign_id, campaign_name, package_name, stat_datetime, `show_count`, click_count, cpc, thousand_show_cost, cost, download_count, download_cost, install_count, install_cost, active_count, active_cost, register_count, register_cost, retain_count, retain_cost, three_day_retain_count, three_day_retain_cost, subscribe_count, subscribe_cost, seven_day_retain_count, seven_day_retain_cost, publisher_real_price_one_day, ad_income_one_day_ltv_hms, ad_income_two_day_ltv_hms, ad_income_three_day_ltv_hms, ad_income_seven_day_ltv_hms, ad_income_fifteen_day_ltv_hms, ad_income_thirty_day_ltv_hms, ad_income_one_day_roi, ad_income_two_day_roi, ad_income_three_day_roi, ad_income_seven_day_roi, ad_income_fifteen_day_roi, ad_income_thirty_day_roi, attribution_income_iaa, attribution_income_iap_normalized, ad_position_id, country)
         VALUES ".to_string();
     sql += placeholders.join(",").as_str();
-    sql += " ON DUPLICATE KEY UPDATE show_count=VALUES(show_count),
+    sql += " ON DUPLICATE KEY UPDATE `show_count`=VALUES(`show_count`),
     click_count=VALUES(click_count),
     cpc=VALUES(cpc),
     thousand_show_cost=VALUES(thousand_show_cost),
@@ -760,11 +760,13 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
         .bind(&vo.country);
     }
     
+    let cmd = query.sql();
     let rs = query.execute(pool).await;
     match rs {
         Ok(v) => {},
         Err(e) => {
             println!("azadmin.reports err {}", e);
+            println!("{}", cmd);
         }
     }
 }
