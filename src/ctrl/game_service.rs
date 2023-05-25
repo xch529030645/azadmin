@@ -649,7 +649,7 @@ impl GameService {
                 }
                 game_repository::insert_or_update_daily_release_report(pool, &vo, record_date).await;
             }
-            println!("calc_release_daily_reports use {}", now);
+            println!("calc_release_daily_reports use {}", self.timestamp() - now);
         }
     }
 
