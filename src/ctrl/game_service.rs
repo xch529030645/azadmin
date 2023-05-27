@@ -2,7 +2,7 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::
 use chrono::{Local, DateTime, Days};
 use sqlx::{Pool, MySql, Row};
 
-use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth};
+use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData};
 
 use super::game_repository;
 // use async_recursion::async_recursion;
@@ -225,8 +225,17 @@ impl GameService {
         let conds = self.get_report_query_conds(params);
         let list = self.query_release_reports(pool, params, &conds).await;
 
+        let table = if let Some(advertisers) = &params.advertisers {
+            if advertisers.is_empty() {
+                "ads_daily_release_reports"
+            } else {
+                "ads_advertiser_daily_release_reports"
+            }
+        } else {
+            "ads_daily_release_reports"
+        };
         
-        let mut sql = "SELECT COUNT(a.id) AS `count` FROM ads_daily_release_reports a".to_string();
+        let mut sql = format!("SELECT COUNT(a.id) AS `count` FROM {} a", table);
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
         }
@@ -464,8 +473,8 @@ impl GameService {
         game_repository::get_app_roas(pool, param).await
     }
 
-    pub async fn login_admin(&self, pool: &Pool<MySql>, req: &ReqLogin) -> Option<String> {
-        let rs = sqlx::query_as::<_, AdminInfo>("SELECT id, `password` FROM admin WHERE username=?")
+    pub async fn login_admin(&self, pool: &Pool<MySql>, req: &ReqLogin) -> Option<ResLogin> {
+        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.`password`, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
         .bind(&req.username)
         .fetch_one(pool)
         .await;
@@ -474,10 +483,25 @@ impl GameService {
             Ok(v) => {
                 if v.password.eq(&req.password) {
                     let jwt = auth::create_jwt(&v.id);
-                    Some(jwt)
+                    Some(ResLogin {token: jwt, privileges: v.prev})
                 } else {
                     None
                 }
+            },
+            Err(_) => None
+        }
+    }
+
+    pub async fn get_privileges(&self, pool: &Pool<MySql>, user_data: &UserData) -> Option<String> {
+        let rs = sqlx::query("SELECT b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.id=?")
+        .bind(&user_data.id)
+        .fetch_one(pool)
+        .await;
+
+        match rs {
+            Ok(v) => {
+                let prev: String = v.get(0);
+                Some(prev)
             },
             Err(_) => None
         }

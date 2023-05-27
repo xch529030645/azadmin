@@ -26,6 +26,12 @@ async fn login_admin(data: web::Data<AppState>, game_service: web::Data<GameServ
     Results::done(&jwt.as_ref())
 }
 
+#[post("/azadmin/get_privileges")]
+async fn get_privileges(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let jwt = game_service.get_privileges(&data.pool, &user_data).await;
+    Results::done(&jwt.as_ref())
+}
+
 #[post("/azadmin/advertisers")]
 pub async fn get_advertisers(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let list = game_service.get_advertisers(&data.pool).await;

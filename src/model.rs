@@ -139,7 +139,8 @@ pub struct ResAdsReportsCount {
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
 pub struct AdminInfo {
     pub id: i32,
-    pub password: String
+    pub password: String,
+    pub prev: String
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
@@ -338,6 +339,13 @@ pub struct AdminAdvertiser {
     pub advertiser_id: String,
     pub remark: Option<String>
 }
+
+#[derive(Serialize,Deserialize)]
+pub struct ResLogin {
+    pub token: String,
+    pub privileges: String,
+}
+
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {
