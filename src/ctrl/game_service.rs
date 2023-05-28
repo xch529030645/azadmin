@@ -235,7 +235,7 @@ impl GameService {
             "ads_daily_release_reports"
         };
         
-        let mut sql = format!("SELECT COUNT(a.id) AS `count` FROM {} a", table);
+        let mut sql = format!("SELECT COUNT(a.*) AS `count` FROM {} a", table);
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
         }
