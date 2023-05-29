@@ -49,6 +49,12 @@ pub struct ReqQueryReports {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqQueryOverview {
+    pub start_date: String,
+    pub end_date: String
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqQueryEarningReports {
     pub app_ids: Option<String>,
     pub start_date: Option<String>,
@@ -150,6 +156,13 @@ pub struct ResSumReports {
     pub iaa: Option<f64>,
     pub earnings: Option<f64>,
     pub first_day_iaa: Option<f64>
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResOverview {
+    pub cost: Option<f64>,
+    pub earnings: Option<f64>,
+    pub stat_datetime: String
 }
 
 #[derive(sqlx::FromRow, Deserialize, Serialize)]

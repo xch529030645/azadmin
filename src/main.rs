@@ -110,6 +110,7 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::get_earnings_reports)
             .service(game_controller::download_reports)
             .service(game_controller::get_sum_reports)
+            .service(game_controller::get_overview)
             .service(game_controller::get_apps)
             .service(game_controller::get_ads_accounts)
             .service(game_controller::bind_app)

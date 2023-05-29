@@ -259,6 +259,21 @@ impl GameService {
         }
     }
 
+    pub async fn get_overview(&self, pool: &Pool<MySql>, params: &ReqQueryOverview) -> Option<Vec<ResOverview>> {
+        let rs = sqlx::query_as::<_, ResOverview>("CALL p_get_overview(?,?)")
+        .bind(&params.start_date)
+        .bind(&params.end_date)
+        .fetch_all(pool)
+        .await;
+        match rs {
+            Ok(v) => Some(v),
+            Err(e) => {
+                println!("get_overview count {}", e);
+                None
+            }
+        }
+    }
+
     pub async fn get_sum_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResSumReports> {
         // let today = Local::now().format("%Y-%m-%d").to_string();
         // let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
@@ -1363,7 +1378,7 @@ impl GameService {
         loop {
             datetime = datetime.checked_sub_days(Days::new(1)).unwrap();
             let date = datetime.format("%Y-%m-%d").to_string();
-            println!("query_last_90_day_earning_reports {}", &date);
+            // println!("query_last_90_day_earning_reports {}", &date);
             
             let is_executed = game_repository::is_daily_task_executed(pool, &date, 1).await;
             if !is_executed {

@@ -126,6 +126,12 @@ pub async fn get_sum_reports(_: UserData, data: web::Data<AppState>, game_servic
     return Results::done(&rs.as_ref());
 }
 
+#[post("/azadmin/get_overview")]
+pub async fn get_overview(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryOverview>) {
+    let rs = game_service.get_overview(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
+
 #[post("/azadmin/get_apps")]
 pub async fn get_apps(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let list = game_service.get_apps(&data.pool).await;
@@ -240,7 +246,7 @@ pub async fn query_last_30_umeng_retentions(pool: &Pool<MySql>, game_service: &G
 pub async fn query_umeng_duration(pool: &Pool<MySql>, game_service: &GameService) {
     let time = timestamp() % 86400;
     // println!("query_umeng_duration {}", time);
-    if time >= 3600 {
+    if time >= 7200 {
         game_service.query_umeng_duration(pool).await;
     }
 }
