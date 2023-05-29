@@ -260,7 +260,17 @@ impl GameService {
     }
 
     pub async fn get_overview(&self, pool: &Pool<MySql>, params: &ReqQueryOverview) -> Option<Vec<ResOverview>> {
-        let rs = sqlx::query_as::<_, ResOverview>("CALL p_get_overview(?,?)")
+        let rs = sqlx::query_as::<_, ResOverview>("SELECT a.*, b.earnings FROM (
+            SELECT SUM(cost) as cost, stat_datetime FROM ads_daily_release_reports 
+            WHERE record_datetime = stat_datetime and stat_datetime BETWEEN ? AND ? AND country ='ALL' group by stat_datetime
+            ) a 
+            LEFT JOIN 
+            (
+            SELECT SUM(earnings) AS earnings, stat_datetime FROM ads_daily_earnings_reports WHERE stat_datetime BETWEEN ? AND ? GROUP BY stat_datetime
+            ) b
+            ON a.stat_datetime = b.stat_datetime;")
+        .bind(&params.start_date)
+        .bind(&params.end_date)
         .bind(&params.start_date)
         .bind(&params.end_date)
         .fetch_all(pool)
@@ -268,7 +278,7 @@ impl GameService {
         match rs {
             Ok(v) => Some(v),
             Err(e) => {
-                println!("get_overview count {}", e);
+                println!("get_overview err {}", e);
                 None
             }
         }
