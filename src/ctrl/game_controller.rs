@@ -127,7 +127,7 @@ pub async fn get_sum_reports(_: UserData, data: web::Data<AppState>, game_servic
 }
 
 #[post("/azadmin/get_overview")]
-pub async fn get_overview(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryOverview>) {
+pub async fn get_overview(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryOverview>) -> impl Responder {
     let rs = game_service.get_overview(&data.pool, &param.0).await;
     return Results::done(&rs.as_ref());
 }
