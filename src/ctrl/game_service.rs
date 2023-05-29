@@ -260,7 +260,7 @@ impl GameService {
     }
 
     pub async fn get_overview(&self, pool: &Pool<MySql>, params: &ReqQueryOverview) -> Option<Vec<ResOverview>> {
-        let rs = sqlx::query_as::<_, ResOverview>("SELECT a.*, b.earnings FROM (
+        let rs = sqlx::query_as::<_, ResOverview>("SELECT a.cost, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, b.earnings FROM (
             SELECT SUM(cost) as cost, stat_datetime FROM ads_daily_release_reports 
             WHERE record_datetime = stat_datetime and stat_datetime BETWEEN ? AND ? AND country ='ALL' group by stat_datetime
             ) a 
