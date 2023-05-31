@@ -1329,9 +1329,9 @@ impl GameService {
     pub async fn query_umeng_duration(&self, pool: &Pool<MySql>) {
         let today = Local::now().format("%Y-%m-%d").to_string();
 
-        let is_executed = game_repository::is_daily_task_executed(pool, &today, 4).await;
+        // let is_executed = game_repository::is_daily_task_executed(pool, &today, 4).await;
 
-        if !is_executed {
+        // if !is_executed {
             let now = self.timestamp();
 
             let rs = game_repository::get_umeng_app_without_duration(pool).await;
@@ -1345,8 +1345,8 @@ impl GameService {
             }
             println!("query_umeng_duration use {}", self.timestamp() - now);
 
-            game_repository::execute_daily_task_done(pool, &today, 4).await;
-        }
+        //     game_repository::execute_daily_task_done(pool, &today, 4).await;
+        // }
         
     }
 
