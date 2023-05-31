@@ -499,7 +499,7 @@ impl GameService {
     }
 
     pub async fn login_admin(&self, pool: &Pool<MySql>, req: &ReqLogin) -> Option<ResLogin> {
-        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.`password`, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
+        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.name, a.`password`, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
         .bind(&req.username)
         .fetch_one(pool)
         .await;
@@ -508,7 +508,7 @@ impl GameService {
             Ok(v) => {
                 if v.password.eq(&req.password) {
                     let jwt = auth::create_jwt(&v.id);
-                    Some(ResLogin {token: jwt, privileges: v.prev})
+                    Some(ResLogin {token: jwt, privileges: v.prev, name: v.name})
                 } else {
                     None
                 }
