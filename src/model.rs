@@ -153,7 +153,8 @@ pub struct AdminInfo {
     pub password: String,
     pub prev: String,
     pub name: Option<String>,
-    pub is_set_password: bool
+    pub is_set_password: bool,
+    pub url: String
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
@@ -365,7 +366,8 @@ pub struct ResLogin {
     pub token: String,
     pub privileges: String,
     pub name: Option<String>,
-    pub is_set_password: bool
+    pub is_set_password: bool,
+    pub url: String
 }
 
 
