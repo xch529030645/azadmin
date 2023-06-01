@@ -99,8 +99,15 @@ pub async fn add_app_gallery(_: UserData, data: web::Data<AppState>, game_servic
 }
 
 #[post("/azadmin/get_reports")]
-pub async fn get_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
-    let list = game_service.get_reports(&data.pool, &param.0).await;
+pub async fn get_reports(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
+    let p = if user_data.id == 4 {
+        let mut param = param.0;
+        param.package_name = Some("com.craftsman.go.huawei".to_string());
+        param
+    } else {
+        param.0
+    };
+    let list = game_service.get_reports(&data.pool, &p).await;
     return Results::done(&list.as_ref());
 }
 
@@ -134,7 +141,14 @@ pub async fn download_reports(data: web::Data<AppState>, game_service: web::Data
 
 #[post("/azadmin/get_sum_reports")]
 pub async fn get_sum_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
-    let rs = game_service.get_sum_reports(&data.pool, &param.0).await;
+    let p = if user_data.id == 4 {
+        let mut param = param.0;
+        param.package_name = Some("com.craftsman.go.huawei".to_string());
+        param
+    } else {
+        param.0
+    };
+    let rs = game_service.get_sum_reports(&data.pool, &p).await;
     return Results::done(&rs.as_ref());
 }
 

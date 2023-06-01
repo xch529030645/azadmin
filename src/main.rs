@@ -71,9 +71,9 @@ async fn main() -> std::io::Result<()> {
                     game_controller::query_ads_reports(&pool, &game_service).await;
                     game_controller::query_last_90_day_earning_reports(&pool, &game_service).await;
                     game_controller::query_last_90_release_reports(&pool, &game_service).await;
-                    game_controller::query_umeng_apps(&pool, &game_service).await;
-                    game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
-                    game_controller::query_umeng_duration(&pool, &game_service).await;
+                    // game_controller::query_umeng_apps(&pool, &game_service).await;
+                    // game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
+                    // game_controller::query_umeng_duration(&pool, &game_service).await;
                 }
                 game_controller::check_package_app_id(&pool, &game_service).await
             }
