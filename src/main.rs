@@ -120,6 +120,7 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::icon)
             .service(game_controller::get_countries)
             .service(game_controller::login_admin)
+            .service(game_controller::change_password)
             .service(game_controller::get_privileges)
             .service(game_controller::update_advertiser_remark)
             .service(game_controller::save_admin)
