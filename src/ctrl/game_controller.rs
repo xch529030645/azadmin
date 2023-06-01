@@ -140,7 +140,7 @@ pub async fn download_reports(data: web::Data<AppState>, game_service: web::Data
 }
 
 #[post("/azadmin/get_sum_reports")]
-pub async fn get_sum_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
+pub async fn get_sum_reports(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
     let p = if user_data.id == 4 {
         let mut param = param.0;
         param.package_name = Some("com.craftsman.go.huawei".to_string());
