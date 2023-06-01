@@ -57,8 +57,8 @@ pub async fn save_admin(_: UserData, data: web::Data<AppState>, game_service: we
 }
 
 #[post("/azadmin/get_admin")]
-pub async fn get_admin(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
-    let list = game_service.get_admin(&data.pool).await;
+pub async fn get_admin(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let list = game_service.get_admin(&data.pool, user_data.id).await;
     return Results::done(&list.as_ref());
 }
 

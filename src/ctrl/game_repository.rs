@@ -906,9 +906,27 @@ pub async fn save_admin(pool: &Pool<MySql>, param: &Admin) -> i32 {
     }
 }
 
-pub async fn get_admin(pool: &Pool<MySql>) -> Option<Vec<Admin>> {
-    let rs = sqlx::query_as::<_, Admin>("SELECT * FROM admin")
-            .fetch_all(pool).await;
+pub async fn get_admin_company_id(pool: &Pool<MySql>, uid: i32) -> i32 {
+    let rs = sqlx::query("SELECT company_id FROM admin WHERE id=?")
+        .bind(uid)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let v = v.get(0);
+            v
+        },
+        Err(e) => {
+            print!("get_admin_company_id: {}", e);
+            0
+        }
+    }
+}
+
+pub async fn get_admin(pool: &Pool<MySql>, uid: i32) -> Option<Vec<Admin>> {
+    let company_id = get_admin_company_id(pool, uid).await;
+    let rs = sqlx::query_as::<_, Admin>("SELECT * FROM admin WHERE company_id=?")
+        .bind(company_id)
+        .fetch_all(pool).await;
     match rs {
         Ok(v) => Some(v),
         Err(e) => {

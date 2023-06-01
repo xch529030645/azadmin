@@ -57,8 +57,8 @@ impl GameService {
         game_repository::save_admin(pool, param).await
     }
 
-    pub async fn get_admin(&self, pool: &Pool<MySql>) -> Option<Vec<Admin>> {
-        game_repository::get_admin(pool).await
+    pub async fn get_admin(&self, pool: &Pool<MySql>, uid: i32) -> Option<Vec<Admin>> {
+        game_repository::get_admin(pool, uid).await
     }
 
     pub async fn get_admin_advertisers(&self, pool: &Pool<MySql>) -> Option<Vec<AdminAdvertiser>> {
