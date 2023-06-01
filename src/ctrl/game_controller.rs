@@ -20,6 +20,12 @@ pub async fn authcallback(data: web::Data<AppState>, game_service: web::Data<Gam
     return Results::err(0)
 }
 
+#[get("/azadmin/auth_webhook")]
+pub async fn authcallback_webhook(data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Query<AuthorizationCode>) -> impl Responder {
+    game_service.authcallback_webhook(&data.pool, &param.0).await;
+    return Results::err(0)
+}
+
 #[post("/azadmin/login_admin")]
 async fn login_admin(data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqLogin>) -> impl Responder {
     let jwt = game_service.login_admin(&data.pool, &param.0).await;

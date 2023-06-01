@@ -839,6 +839,9 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
 }
 
 pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, data_list: &Vec<AdsDailyReleaseReportAdv>, record_date: &str) {
+    if data_list.is_empty() {
+        return;
+    }
     let mut sql = "INSERT INTO azadmin.ads_advertiser_daily_release_reports
     (advertiser_id, package_name, cost, active, iaa, stat_datetime, record_datetime, country)
     VALUES ".to_string();
@@ -973,5 +976,21 @@ pub async fn change_password(pool: &Pool<MySql>, uid: i32, password: &String) ->
         0
     } else {
         1
+    }
+}
+
+pub async fn get_company_url(pool: &Pool<MySql>, company_id: i32) -> Option<String> {
+    let rs = sqlx::query("SELECT url FROM admin WHERE company_id=?")
+        .bind(company_id)
+        .fetch_one(pool).await;
+    match rs {
+        Ok(v) => {
+            let url: String = v.get(0);
+            Some(url)
+        },
+        Err(e) => {
+            print!("get_company_url: {}", e);
+            None
+        }
     }
 }

@@ -102,6 +102,7 @@ async fn main() -> std::io::Result<()> {
             }))
             .app_data(web::Data::new(GameService::create()))
             .service(game_controller::authcallback)
+            .service(game_controller::authcallback_webhook)
             .service(game_controller::get_advertisers)
             .service(game_controller::add_advertiser)
             .service(game_controller::get_app_gallery)

@@ -23,13 +23,39 @@ impl GameService {
 
     pub async fn authcallback(&self, pool: &Pool<MySql>, auth: &AuthorizationCode) {
         // println!("authcallback: {}", &auth.authorization_code);
-        let rs = server_api::get_access_token(&auth.authorization_code, CLIENT_ID, CLIENT_SECRET, REDIRECT_URL).await;
-        let advertiser_id = &auth.state;
-        if let Some(res_access_token) = rs {
-            self.save_market_access_token(pool, &res_access_token, &advertiser_id).await;
+        let state = &auth.state;
+        if !state.contains("|") {
+            let rs = server_api::get_access_token(&auth.authorization_code, CLIENT_ID, CLIENT_SECRET, REDIRECT_URL).await;
+            if let Some(res_access_token) = rs {
+                self.save_market_access_token(pool, &res_access_token, state).await;
+            } else {
+                println!("no access token")
+            }
         } else {
-            println!("no access token")
+            let state: Vec<&str> = state.split("|").collect();
+            let company = state[0];
+            let company_id = company.parse::<i32>().unwrap();
+            let advertiser_id = state[1];
+
+            let url = game_repository::get_company_url(pool, company_id).await;
+            if let Some(url) = url {
+                self.redirect_authcallback(&url, advertiser_id, &auth.authorization_code).await;
+            }
         }
+    }
+
+    pub async fn authcallback_webhook(&self, pool: &Pool<MySql>, auth: &AuthorizationCode) {
+        let rs = server_api::get_access_token(&auth.authorization_code, CLIENT_ID, CLIENT_SECRET, REDIRECT_URL).await;
+        if let Some(res_access_token) = rs {
+            self.save_market_access_token(pool, &res_access_token, &auth.state).await;
+        } else {
+            println!("authcallback_webhook no access token")
+        }
+    }
+
+    async fn redirect_authcallback(&self, url: &String, advertiser_id: &str, authorization_code: &String) {
+        let url = format!("{}/azadmin/auth_webhook?state={}&authorization_code={}", url, advertiser_id, authorization_code);
+        server_api::get(&url).await;
     }
 
     pub async fn get_advertisers(&self, pool: &Pool<MySql>) -> Option<Vec<ReleaseToken>> {
@@ -499,7 +525,7 @@ impl GameService {
     }
 
     pub async fn login_admin(&self, pool: &Pool<MySql>, req: &ReqLogin) -> Option<ResLogin> {
-        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.name, a.`password`, a.is_set_password, a.url, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
+        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.name, a.`password`, a.is_set_password, a.url, a.company_id, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
         .bind(&req.username)
         .fetch_one(pool)
         .await;
@@ -513,7 +539,8 @@ impl GameService {
                         privileges: v.prev, 
                         name: v.name, 
                         is_set_password: v.is_set_password,
-                        url: v.url
+                        url: v.url,
+                        company_id: v.company_id
                     })
                 } else {
                     None
@@ -538,7 +565,10 @@ impl GameService {
                 let prev: String = v.get(0);
                 Some(prev)
             },
-            Err(_) => None
+            Err(e) => {
+                println!("get_privileges err {}", e);
+                None
+            }
         }
     }
 
@@ -573,7 +603,7 @@ impl GameService {
         // println!();
     }
 
-    async fn save_market_access_token(&self, pool: &Pool<MySql>, res_access_token: &ResAccessToken, advertiser_id: &String) {
+    async fn save_market_access_token(&self, pool: &Pool<MySql>, res_access_token: &ResAccessToken, advertiser_id: &str) {
         let expires_in_i64 = (res_access_token.expires_in * 1000) as i64;
             let expire_time = self.timestamp() + expires_in_i64 - 60000;
             let rs = sqlx::query("CALL p_save_advertiser(?,?,?,?)")

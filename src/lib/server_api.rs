@@ -234,3 +234,19 @@ pub async fn query_package_app_id(client_id: &String, access_token: &String, pac
         }
     }
 }
+
+
+pub async fn get(url: &String) -> Option<String> {
+    let client = reqwest::Client::new();
+    let rs = client.get(url.as_str()).send().await;
+    match rs {
+        Ok(v) => {
+            let txt = v.text().await.unwrap();
+            Some(txt)
+        },
+        Err(e) => {
+            println!("get err: {}", e);
+            None
+        }
+    }
+}
