@@ -26,6 +26,12 @@ async fn login_admin(data: web::Data<AppState>, game_service: web::Data<GameServ
     Results::done(&jwt.as_ref())
 }
 
+#[post("/azadmin/change_password")]
+async fn change_password(data: web::Data<AppState>, user_data: UserData, game_service: web::Data<GameService>, param: web::Json<ReqChangePassword>) -> impl Responder {
+    let err = game_service.change_password(&data.pool, user_data.id, &param.0).await;
+    Results::err(err)
+}
+
 #[post("/azadmin/get_privileges")]
 async fn get_privileges(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let jwt = game_service.get_privileges(&data.pool, &user_data).await;

@@ -499,7 +499,7 @@ impl GameService {
     }
 
     pub async fn login_admin(&self, pool: &Pool<MySql>, req: &ReqLogin) -> Option<ResLogin> {
-        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.name, a.`password`, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
+        let rs = sqlx::query_as::<_, AdminInfo>("SELECT a.id, a.name, a.`password`, a.is_set_password, b.prev FROM admin a LEFT JOIN `privileges` b ON a.role=b.role WHERE a.username=?")
         .bind(&req.username)
         .fetch_one(pool)
         .await;
@@ -508,13 +508,17 @@ impl GameService {
             Ok(v) => {
                 if v.password.eq(&req.password) {
                     let jwt = auth::create_jwt(&v.id);
-                    Some(ResLogin {token: jwt, privileges: v.prev, name: v.name})
+                    Some(ResLogin {token: jwt, privileges: v.prev, name: v.name, is_set_password: v.is_set_password})
                 } else {
                     None
                 }
             },
             Err(_) => None
         }
+    }
+
+    pub async fn change_password(&self, pool: &Pool<MySql>, uid: i32, req: &ReqChangePassword) -> i32 {
+        game_repository::change_password(pool, uid, &req.password).await
     }
 
     pub async fn get_privileges(&self, pool: &Pool<MySql>, user_data: &UserData) -> Option<String> {

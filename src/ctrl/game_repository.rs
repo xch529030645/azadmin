@@ -945,3 +945,15 @@ pub async fn save_admin_advertisers(pool: &Pool<MySql>, param: &ReqSaveAdminAdve
     }
     0
 }
+
+pub async fn change_password(pool: &Pool<MySql>, uid: i32, password: &String) -> i32 {
+    let rs = sqlx::query("UPDATE admin SET `password`=?, is_set_password=1 WHERE id=?")
+            .bind(password)
+            .bind(uid)
+            .execute(pool).await;
+    if rs.is_ok() {
+        0
+    } else {
+        1
+    }
+}

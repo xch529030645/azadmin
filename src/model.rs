@@ -34,6 +34,11 @@ pub struct ReqLogin {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqChangePassword {
+    pub password: String
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqQueryReports {
     pub package_name: Option<String>,
     pub start_date: Option<String>,
@@ -147,7 +152,8 @@ pub struct AdminInfo {
     pub id: i32,
     pub password: String,
     pub prev: String,
-    pub name: Option<String>
+    pub name: Option<String>,
+    pub is_set_password: bool
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
@@ -358,7 +364,8 @@ pub struct AdminAdvertiser {
 pub struct ResLogin {
     pub token: String,
     pub privileges: String,
-    pub name: Option<String>
+    pub name: Option<String>,
+    pub is_set_password: bool
 }
 
 
