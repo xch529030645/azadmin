@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, str::FromStr};
 
 use reqwest::header::HeaderMap;
+use serde::{Serialize, de};
 use serde_json::from_str;
 
 use crate::model::*;
@@ -235,6 +236,154 @@ pub async fn query_package_app_id(client_id: &String, access_token: &String, pac
     }
 }
 
+
+pub async fn create_campaign(access_token: &str, advertiser_id: &str, campaign_name: &str, daily_budget: i32, sync_flow_resource_searchad: &str) -> Option<ResCreateCampaign> {
+    let data = ReqCreateCampaign {
+        advertiser_id: advertiser_id.to_string(), 
+        campaign_name: campaign_name.to_string(), 
+        product_type: "ANDROID_APP".to_string(),
+        daily_budget, 
+        sync_flow_resource_searchad: sync_flow_resource_searchad.to_string()
+    };
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/create", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => Some(v),
+                Err(e) => None
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn query_products(access_token: &str, advertiser_id: &str, page: i32) -> Option<ResQueryProduct> {
+    let data = ReqQueryProduct::create(advertiser_id, page);
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/product/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => Some(v),
+                Err(e) => {
+                    println!("query_products err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn create_audience_package(access_token: &str, advertiser_id: &str, targeting_name: &String, targeting_description: &String, location: Vec<String>) -> Option<ResAudienceData> {
+    let data = ReqCreateAudience::create(advertiser_id, targeting_name, targeting_description, CustomLocation { value: location });
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/targeting_package/create", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResCreateAudience, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        Some(v.data)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("create_audience_package err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+
+pub async fn query_audience_package(access_token: &str, advertiser_id: &String, page: i32) -> Option<ResQueryAudienceData> {
+    let data = ReqQueryAudience {
+        advertiser_id: advertiser_id.clone(),
+        page,
+        page_size: 50
+    };
+
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/targeting_package/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResQueryAudience, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        Some(v.data)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("query_audience_package err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+
+pub async fn query_position(access_token: &String, advertiser_id: &String) -> Option<String> {
+    let mut data = HashMap::new();
+    data.insert("advertiser_id", advertiser_id);
+    curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/position/query", "GET", access_token, &data).await
+}
+
+pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i32) -> Option<ResQueryAssetsData> {
+    let data = ReqQueryAssets {
+        advertiser_id: advertiser_id.clone(), 
+        page, 
+        page_size: 50
+    };
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/position/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResQueryAssetsResult, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        Some(v.data)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("query_audience_package err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+async fn curl<T: Serialize + ?Sized>(url: &str, method: &str, access_token: &str, data: &T) -> Option<String> {
+    let client = reqwest::Client::new();
+    let mut headers = HeaderMap::new();
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+    headers.insert("Authorization", ("Bearer ".to_string()+access_token).parse().unwrap());
+
+    let rs = if method.eq("POST") {client.post(url)} else {client.get(url)}.headers(headers).json(&data).send().await;
+    match rs {
+        Ok(v) => {
+            let at = v.text().await.unwrap();
+            Some(at)
+        },
+        Err(e) => {
+            println!("{} err: {}", url, e);
+            None
+        }
+    }
+
+}
 
 pub async fn get(url: &String) -> Option<String> {
     let client = reqwest::Client::new();

@@ -994,3 +994,16 @@ pub async fn get_company_url(pool: &Pool<MySql>, company_id: i32) -> Option<Stri
         }
     }
 }
+
+pub async fn get_advertiser_tokens(pool: &Pool<MySql>) -> Vec<ReleaseToken> {
+    let rs = sqlx::query_as::<_, ReleaseToken>("SELECT * FROM advertisers WHERE NOT ISNULL(access_token)")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => v,
+        Err(e) => {
+            println!("get_advertiser_tokens {}", e);
+            vec![]
+        }
+    }
+}

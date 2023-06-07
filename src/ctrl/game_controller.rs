@@ -1,4 +1,4 @@
-use std::{fs, io::Write, time::{SystemTime, UNIX_EPOCH}};
+use std::{fs, io::Write, time::{SystemTime, UNIX_EPOCH}, process::Command};
 
 use actix_files::NamedFile;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, Result, http::header::{ContentDisposition, DispositionType, DispositionParam}};
@@ -12,6 +12,8 @@ use actix_multipart::{
     Multipart,
 };
 use crate::{AppState, ctrl::{game_service::GameService}, model::*, lib::req::AuthorizationCode, user_data::UserData};
+
+use super::game_repository;
 
 
 #[get("/azadmin/auth")]
@@ -292,4 +294,15 @@ pub async fn query_last_90_day_earning_reports(pool: &Pool<MySql>, game_service:
         game_service.query_last_90_day_earning_reports(pool).await;
     }
     
+}
+
+pub async fn restart_mysql(pool: &Pool<MySql>) {
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let is_executed = game_repository::is_daily_task_executed(pool, &today, 6).await;
+    if !is_executed {
+        let output = Command::new("systemctl restart mysqld").output().expect("执行异常，提示");
+        let out = String::from_utf8(output.stdout).unwrap();
+        println!("{}", out);
+        game_repository::done_daily_query_task(pool, &today).await;
+    }
 }

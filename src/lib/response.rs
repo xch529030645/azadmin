@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::req::CustomLocation;
+
 #[derive(Deserialize, Serialize)]
 pub struct ResAccessToken {
     pub access_token: String,
@@ -146,4 +148,122 @@ pub struct ResAppIdVo {
 pub struct ResAppId {
     pub ret: ResAppIdRet,
     pub appids: Vec<ResAppIdVo>
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCampaign {
+    pub campaign_id: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateCampaign {
+    pub code: String,
+    pub message: Option<String>,
+    pub data: ResCampaign
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResProductAppInfo {
+    pub icon_url: String,
+    pub app_store_download_url: String,
+    pub package_name: String,
+    pub description: String,
+    pub default_editor_desc: String,
+    pub app_id: String,
+    pub product_name: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResProductInfo {
+    pub app: ResProductAppInfo
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResProduct {
+    pub product_type: String,
+    pub product_id: String,
+    pub product_info: ResProductInfo
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResProductResults {
+    pub total: i32,
+    pub data: Vec<ResProduct>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryProduct {
+    pub code: String,
+    pub data: ResProductResults
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResAudienceData {
+    pub targeting_id: i64,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateAudience {
+    pub code: String,
+    pub data: ResAudienceData
+}
+
+// ---- query audience
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAudienceInfo {
+    pub targeting_id: i64,
+    pub targeting_description: Option<String>,
+    pub targeting_type: String,
+    pub targeting_name: String,
+    pub not_installed_apps_struct: Option<CustomLocation>,
+    pub app_category_of_media_struct: Option<CustomLocation>,
+    pub language_struct: Option<CustomLocation>,
+    pub current_custom_location_struct: Option<CustomLocation>,
+    pub gender_struct: Option<CustomLocation>,
+    pub age_struct: Option<CustomLocation>,
+    pub ai_target_flag: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAudienceData {
+    pub total: i32,
+    pub data: Vec<ResQueryAudienceInfo>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAudience {
+    pub code: String,
+    pub data: ResQueryAudienceData
+}
+
+
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAssets {
+    pub asset_id: i64,
+    pub asset_name: String,
+    pub asset_type: String,
+    pub file_url: String,
+    pub width: i32,
+    pub height: i32,
+    pub video_play_duration: i32,
+    pub file_size: i32,
+    pub file_format: String,
+    pub file_hash_sha256: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAssetsData {
+    pub total: i32,
+    pub creative_asset_infos: Vec<ResQueryAssets>
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResQueryAssetsResult {
+    pub code: String,
+    pub data: ResQueryAssetsData
 }

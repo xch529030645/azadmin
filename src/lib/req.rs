@@ -70,3 +70,81 @@ impl ReqQueryAdEarningReport<'_> {
         self.filtering.insert(key, value);
     }
 }
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateCampaign {
+    pub advertiser_id: String,
+    pub campaign_name: String,
+    pub product_type: String,
+    pub daily_budget: i32,
+    pub sync_flow_resource_searchad: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryProduct<'a> {
+    pub advertiser_id: &'a str,
+    pub page: i32,
+    pub page_size: i32,
+    pub filtering: HashMap<&'a str, &'a str>
+}
+
+impl<'a> ReqQueryProduct<'a> {
+    pub fn create(advertiser_id: &str, page: i32) -> ReqQueryProduct {
+        let mut filtering = HashMap::new();
+        filtering.insert("product_type", "ANDROID_APP");
+        filtering.insert("ag_app_type", "AG_APP_FOR_DISPLAY_NETWORK");
+        ReqQueryProduct {
+            advertiser_id,
+            page,
+            page_size: 50,
+            filtering
+        }
+    }
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct CustomLocation {
+    pub value: Vec<String>
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateAudience<'a> {
+    pub advertiser_id: &'a str,
+    pub targeting_name: &'a str,
+    pub targeting_description: &'a str,
+    pub targeting_type: &'a str,
+    pub current_custom_location_struct: CustomLocation,
+    pub not_installed_apps_struct: CustomLocation,
+    pub ai_target_flag: &'a str,
+}
+
+
+impl<'a> ReqCreateAudience<'a> {
+    pub fn create(advertiser_id: &'a str, targeting_name: &'a str, targeting_description: &'a str, current_custom_location_struct: CustomLocation) -> ReqCreateAudience<'a> {
+        ReqCreateAudience {
+            advertiser_id,
+            targeting_name,
+            targeting_description,
+            targeting_type: "TARGET_TYPE_NOT_APP",
+            current_custom_location_struct,
+            not_installed_apps_struct: CustomLocation { value: vec![String::from("true")] },
+            ai_target_flag: "AI_TARGET_DISABLE"
+        }
+    }
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryAudience {
+    pub advertiser_id: String,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryAssets {
+    pub advertiser_id: String,
+    pub page: i32,
+    pub page_size: i32
+}

@@ -10,7 +10,8 @@ use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 #[derive(Serialize,Deserialize)]
 pub struct ServerConfig {
     pub password: String,
-    pub profiles: String
+    pub host: String,
+    pub profiles: String,
 }
 
 impl ServerConfig {
@@ -372,6 +373,34 @@ pub struct ResLogin {
     pub company_id: i32
 }
 
+
+#[derive(Serialize,Deserialize)]
+pub struct FormCreateAudience {
+    pub advertiser_id: String,
+    pub name: String,
+    pub description: String,
+    pub countries: Vec<String>,
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct FormAdvertiser {
+    pub advertiser_id: String,
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct AudiencePreview {
+    pub targeting_id: i64,
+    pub advertiser_id: String,
+    pub targeting_name: String,
+    pub targeting_description: Option<String>,
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct Position {
+    pub creative_size_id: i64,
+    pub advertiser_id: String,
+    pub content: String
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {

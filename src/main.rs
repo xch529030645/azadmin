@@ -13,7 +13,7 @@ use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
 use std::{time::Duration, fs};
 use ctrl::game_controller;
 
-use crate::{ctrl::game_service::GameService, model::MysqlConfig};
+use crate::{ctrl::{game_service::GameService, promotion_service::PromotionService, promotion_controller}, model::MysqlConfig};
 
 
 #[get("/azadmin/test")]
@@ -36,7 +36,7 @@ pub struct AppState {
 
 fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
     return format!("mysql://{}:{}@{}:{}/azadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useOldAliasMetadataBehavior=true",
-                "root",server_config.password,"127.0.0.1","3306");
+                "root",server_config.password,server_config.host,"3306");
 }
 
 #[actix_web::main]
@@ -58,6 +58,7 @@ async fn main() -> std::io::Result<()> {
             .connect(&get_mysql_connect_url(&server_config))
             .await.unwrap_or_else(|_| { std::process::exit(0) });
             let game_service = GameService::create();
+            let promotion_service = PromotionService::create();
     
             let mut interval = time::interval(Duration::from_secs(60));
             let mut task_interval_1 = 1;
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
                 task_interval_1 = task_interval_1 - 1;
                 if task_interval_1 == 0 {
                     task_interval_1 = 5;
+                    game_controller::restart_mysql().await;
                     game_controller::check_access_token(&pool, &game_service).await;
                     game_controller::query_reports(&pool, &game_service).await;
                     game_controller::query_ads_reports(&pool, &game_service).await;
@@ -74,6 +76,8 @@ async fn main() -> std::io::Result<()> {
                     game_controller::query_umeng_apps(&pool, &game_service).await;
                     game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
                     game_controller::query_umeng_duration(&pool, &game_service).await;
+
+                    promotion_controller::fetch_assets(&pool, &promotion_service).await;
                 }
                 game_controller::check_package_app_id(&pool, &game_service).await
             }
@@ -101,6 +105,7 @@ async fn main() -> std::io::Result<()> {
                 pool: pool.clone(),
             }))
             .app_data(web::Data::new(GameService::create()))
+            .app_data(web::Data::new(PromotionService::create()))
             .service(game_controller::authcallback)
             .service(game_controller::authcallback_webhook)
             .service(game_controller::get_advertisers)
@@ -128,6 +133,10 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::get_admin)
             .service(game_controller::get_admin_advertisers)
             .service(game_controller::save_admin_advertisers)
+            .service(promotion_controller::create_audience_package)
+            .service(promotion_controller::sync_audience_package)
+            .service(promotion_controller::get_audience_package)
+            .service(promotion_controller::get_position)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?
