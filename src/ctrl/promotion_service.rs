@@ -199,7 +199,7 @@ impl PromotionService {
                 self.fetch_assets_for_adv(pool, &adv).await;
             }
 
-            game_repository::done_daily_query_task(pool, &today).await;
+            game_repository::execute_daily_task_done(pool, &today, 5).await;
         }
     }
 

@@ -308,7 +308,7 @@ pub async fn restart_mysql(pool: &Pool<MySql>) {
                     Ok(output) => {
                         let out = String::from_utf8(output.stdout).unwrap();
                         println!("{}", out);
-                        game_repository::done_daily_query_task(pool, &today).await;
+                        game_repository::execute_daily_task_done(pool, &today, 6).await;
                     }
                     Err(e) => {
                         println!("restart_mysql {}", e);
