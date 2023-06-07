@@ -663,7 +663,7 @@ pub async fn is_daily_task_executed(pool: &Pool<MySql>, today: &String, task_typ
             a
         },
         Err(e) => {
-            print!("is_daily_task_executed: {}", e);
+            println!("is_daily_task_executed: {}", e);
             false
         }
     }
