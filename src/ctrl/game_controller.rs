@@ -300,9 +300,17 @@ pub async fn restart_mysql(pool: &Pool<MySql>) {
     let today = Local::now().format("%Y-%m-%d").to_string();
     let is_executed = game_repository::is_daily_task_executed(pool, &today, 6).await;
     if !is_executed {
-        let output = Command::new("systemctl restart mysqld").output().expect("执行异常，提示");
-        let out = String::from_utf8(output.stdout).unwrap();
-        println!("{}", out);
-        game_repository::done_daily_query_task(pool, &today).await;
+        let output = Command::new("/usr/bin/systemctl restart mysqld").output();
+        match output {
+            Ok(output) => {
+                let out = String::from_utf8(output.stdout).unwrap();
+                println!("{}", out);
+                game_repository::done_daily_query_task(pool, &today).await;
+            }
+            Err(e) => {
+                println!("restart_mysql {}", e);
+            }
+        }
+        
     }
 }
