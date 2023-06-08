@@ -250,7 +250,7 @@ pub struct ResQueryAssets {
     pub file_url: String,
     pub width: i32,
     pub height: i32,
-    pub video_play_duration: i32,
+    pub video_play_duration: Option<i32>,
     pub file_size: i32,
     pub file_format: String,
     pub file_hash_sha256: String

@@ -149,27 +149,34 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
 
     let data = ReqQueryAdGroupReport::create(advertiser_id.to_string(), "STAT_TIME_GRANULARITY_DAILY".to_string(), page, page_size, start_date.to_string(), end_date.to_string());
     // println!("{:?}", &data);
-    let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers).json(&data).send().await;
-    match rs {
-        Ok(v) => {
-            // let txt = v.text().await.unwrap();
-            // fs::write("/Volumes/MacintoshHD/Work/Rust/azadmin/res.txt", txt);
-            // // println!("query_reports res {:?}", v.text().await.unwrap());
-            // None
-            let at = v.json::<ResReports>().await;
-            match at {
-                Ok(at) => Some(at),
-                Err(e) => {
-                    println!("query_reports err: {}", e);
-                    None
+    let mut ret: Option<ResReports> = None;
+    loop {
+        let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers).json(&data).send().await;
+        match rs {
+            Ok(v) => {
+                // let txt = v.text().await.unwrap();
+                // fs::write("/Volumes/MacintoshHD/Work/Rust/azadmin/res.txt", txt);
+                // // println!("query_reports res {:?}", v.text().await.unwrap());
+                // None
+                let at = v.json::<ResReports>().await;
+                match at {
+                    Ok(at) => {
+                        ret = Some(at);
+                        break;
+                    },
+                    Err(e) => {
+                        println!("query_reports json err: {}", e);
+                    }
                 }
+            },
+            Err(e) => {
+                println!("query_reports http err: {}", e);
             }
-        },
-        Err(e) => {
-            println!("query_reports err: {}", e);
-            None
         }
     }
+
+    ret
+    
 }
 
 pub async fn query_ads_reports_by_token(access_token: &String, start_date: &String, end_date: &String, page: i32, page_size: i32) -> Option<ResEarningReports> {
@@ -356,7 +363,7 @@ pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i
                     }
                 },
                 Err(e) => {
-                    println!("query_assets err: {}", &txt);
+                    println!("query_assets err: {}", e);
                     None
                 }
             }
