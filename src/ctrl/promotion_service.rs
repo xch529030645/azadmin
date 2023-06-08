@@ -204,9 +204,11 @@ impl PromotionService {
     }
 
     async fn fetch_assets_for_adv(&self, pool: &Pool<MySql>, adv: &ReleaseToken) {
+        println!("fetch_assets_for_adv: {}", adv.advertiser_id);
         if let Some(access_token) = &adv.access_token {
             let mut page = 1;
             loop {
+                println!("fetch_assets_for_adv: {}, page: {}", adv.advertiser_id, page);
                 let rs = server_api::query_assets(access_token, &adv.advertiser_id, page).await;
                 if let Some(rs) = rs {
                     let total_page = (rs.total as f32 / 50.0_f32).ceil() as i32;
