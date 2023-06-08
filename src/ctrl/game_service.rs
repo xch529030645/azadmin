@@ -1,4 +1,4 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::Sub};
+use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::Sub, sync::{Arc, Mutex}, cmp::min};
 use chrono::{Local, DateTime, Days};
 use sqlx::{Pool, MySql, Row};
 
@@ -681,6 +681,20 @@ impl GameService {
         }
     }
 
+    fn get_task(&self, tasks: &Arc<Mutex<Vec<TaskQueryReports>>>) -> Option<TaskQueryReports> {
+        let rs = tasks.lock();
+        match rs {
+            Ok(mut v) => {
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v.remove(0))
+                }
+            },
+            Err(_) => None
+        }
+    }
+
     pub async fn query_reports(&self, pool: &Pool<MySql>, start_date_local: &DateTime<Local>, end_date_local: &DateTime<Local>) {
         println!();
         println!("==query_reports start==");
@@ -689,78 +703,85 @@ impl GameService {
         .await;
         match rs {
             Ok(v) => {
-                let mut days_range: Vec<Vec<String>> = vec![];
+                // let mut days_range: Vec<Vec<String>> = vec![];
                 let mut days: Vec<String> = vec![];
                 let mut start_date = start_date_local.format("%Y-%m-%d").to_string();
                 let end_date = end_date_local.format("%Y-%m-%d").to_string();
                 if start_date.eq(&end_date) {
                     days.push(start_date.clone());
-                    days_range.push(days);
+                    // days_range.push(days);
                 } else {
                     let mut from = start_date_local.clone();
-                    let mut idx = 0;
+                    // let mut idx = 0;
                     while !start_date.eq(&end_date) {
                         if let Some(s) = from.checked_add_days(Days::new(1)) {
                             start_date = s.format("%Y-%m-%d").to_string();
-                            println!("{}", &start_date);
+                            // println!("{}", &start_date);
                             days.push(start_date.clone());
                             from = s;
-                            idx = idx + 1;
-                            if idx > 6 {
-                                idx = 0;
-                                days_range.push(days);
-                                days = vec![];
-                            }
+                            // idx = idx + 1;
+                            // if idx > 6 {
+                            //     idx = 0;
+                            //     days_range.push(days);
+                            //     days = vec![];
+                            // }
                         } else {
                             break;
                         }
                     }
+                    // if !days.is_empty() {
+                    //     days_range.push(days);
+                    // }
+                }
+                let mut task_list = vec![];
+                for adv in &v {
                     if !days.is_empty() {
-                        days_range.push(days);
+                        for day in &days {
+                            task_list.push(TaskQueryReports {
+                                advertiser_id: adv.advertiser_id.clone(),
+                                date: day.clone()
+                            })
+                        }
                     }
                 }
+
+                let task_count = task_list.len();
+
                 let mut thread_headlers = vec![];
-                for adv in &v {
-                    if !&days_range.is_empty() {
-                        let mut adv_token_copy = adv.clone();
-                        let mysql = pool.clone();
-                        let service = self.clone();
-                        let days_range_copy = days_range.clone();
-                        let handle = actix_rt::spawn(async move {
-                            for days in days_range_copy {
-                                
-                                // let record_date = end_date.clone();
-                                
-                                // let service = GameService::create();
-                                // let mut app_package_names: HashSet<String> = HashSet::new();
-                                for date in days {
-                                    println!("query {}, from: {}, to: {}", adv_token_copy.advertiser_id, &date, &date);
-                                    let mut page_info: Option<PageInfo> = None;
-                                    loop {
-                                        let access_token = game_repository::get_marketing_access_token(&mysql, &adv_token_copy.advertiser_id).await;
-                                        adv_token_copy.access_token = access_token;
-                                        page_info = service.query_advertiser_reports(&mysql, &adv_token_copy, &date, &date, page_info, 1000).await;
-                                        if let Some(pi) = page_info {
-                                            if pi.page <= pi.total_page {
-                                                page_info = Some(pi);
-                                            } else {
-                                                break;
-                                            }
+                let thread_task_list = Arc::new(Mutex::new(task_list));
+
+                
+                let worker_count = min(task_count, 20_usize);
+                for i in 0..worker_count {
+                    let tasks: Arc<Mutex<Vec<TaskQueryReports>>> = Arc::clone(&thread_task_list);
+                    let mysql = pool.clone();
+                    let service = self.clone();
+                    let handle = actix_rt::spawn(async move {
+                        loop {
+                            let task_info = service.get_task(&tasks);
+                            if let Some(task_info) = task_info {
+                                println!("query {}, from: {}, to: {}", &task_info.advertiser_id, &task_info.date, &task_info.date);
+                                let mut page_info: Option<PageInfo> = None;
+                                loop {
+                                    // let access_token = game_repository::get_marketing_access_token(&mysql, &adv_token_copy.advertiser_id).await;
+                                    // adv_token_copy.access_token = access_token;
+                                    page_info = service.query_advertiser_reports(&mysql, &task_info.advertiser_id, &task_info.date, &task_info.date, page_info, 1000).await;
+                                    if let Some(pi) = page_info {
+                                        if pi.page <= pi.total_page {
+                                            page_info = Some(pi);
                                         } else {
                                             break;
                                         }
+                                    } else {
+                                        break;
                                     }
-                                    // service.calc_release_daily_reports(&mysql, &date, &record_date, &mut app_package_names).await;
                                 }
-
-                                
-                                // service.save_unknown_package_names(&mysql, &app_package_names).await;
-                                
+                            } else {
+                                break;
                             }
-
-                        });
-                        thread_headlers.push(handle);
-                    }
+                        }
+                    });
+                    thread_headlers.push(handle);
                 }
                 for handle in thread_headlers {
                     if !handle.is_finished() {
@@ -769,14 +790,16 @@ impl GameService {
                 }
                 println!("start calc_release_daily_reports");
                 let mut app_package_names: HashSet<String> = HashSet::new();
-                if !&days_range.is_empty() {
-                    for days in &days_range {
-                        for date in days {
-                            self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
-                            self.calc_advertiser_release_daily_reports(&pool, &date, &end_date).await;
-                        }
-                    }
+                // if !&days_range.is_empty() {
+                //     for days in &days_range {
+                        
+                //     }
+                // }
+                for date in days {
+                    self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
+                    self.calc_advertiser_release_daily_reports(&pool, &date, &end_date).await;
                 }
+
                 self.save_unknown_package_names(&pool, &app_package_names).await;
             },
             Err(e) => {
@@ -862,14 +885,15 @@ impl GameService {
             && vo.attribution_income_iap_normalized.parse::<f32>().unwrap_or(0_f32) == 0_f32;
     }
     
-    async fn query_advertiser_reports(&self, pool: &Pool<MySql>, advertiser: &ReleaseToken, start_date: &String, end_date: &String, page_info: Option<PageInfo>, page_size: i32) -> Option<PageInfo> {
+    async fn query_advertiser_reports(&self, pool: &Pool<MySql>, advertiser_id: &String, start_date: &String, end_date: &String, page_info: Option<PageInfo>, page_size: i32) -> Option<PageInfo> {
         let page = match &page_info {
             Some(v) => v.page,
             None => 1
         };
         println!("query_advertiser_reports page {}", page);
-        if let Some(access_token) = &advertiser.access_token {
-            let rs = server_api::query_reports(&advertiser.advertiser_id, access_token, &start_date, &end_date, page, page_size).await;
+        let access_token = game_repository::get_marketing_access_token(pool, &advertiser_id).await;
+        if let Some(access_token) = &access_token {
+            let rs = server_api::query_reports(&advertiser_id, access_token, &start_date, &end_date, page, page_size).await;
             if let Some(reports) = rs {
                 if reports.code == "0" {
                     // let mut sqls = Vec::<String>::new();
@@ -895,7 +919,7 @@ impl GameService {
                         if !data_list.is_empty() {
                             let now = self.timestamp();
                             for list in data_list {
-                                game_repository::save_marketing_reports(pool, &advertiser, &list).await;
+                                game_repository::save_marketing_reports(pool, &advertiser_id, &list).await;
                             }
                             println!("query_advertiser_reports use {}", self.timestamp() - now);
                         }

@@ -729,7 +729,7 @@ pub async fn get_marketing_access_token(pool: &Pool<MySql>, advertiser_id: &Stri
     }
 }
 
-pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToken, list: &Vec<ResReportVo>)  {
+pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser_id: &String, list: &Vec<ResReportVo>)  {
     let mut placeholders: Vec<&str> = vec![];
     for _ in list {
         placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -780,7 +780,7 @@ pub async fn save_marketing_reports(pool: &Pool<MySql>, advertiser: &ReleaseToke
 
     for vo in list {
         let stat_datetime = "".to_string() + &vo.stat_datetime[0..4] + "-" + &vo.stat_datetime[4..6] + "-" + &vo.stat_datetime[6..8];
-        query = query.bind(&advertiser.advertiser_id)
+        query = query.bind(advertiser_id)
         .bind(&vo.adgroup_id)
         .bind(&vo.adgroup_name)
         .bind(&vo.campaign_id)

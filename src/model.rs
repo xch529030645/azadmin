@@ -402,6 +402,13 @@ pub struct Position {
     pub content: String
 }
 
+
+#[derive(Serialize,Deserialize)]
+pub struct TaskQueryReports {
+    pub advertiser_id: String,
+    pub date: String
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {
     pub err: i32,

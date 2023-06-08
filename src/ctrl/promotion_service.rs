@@ -224,6 +224,6 @@ impl PromotionService {
     }
 
     async fn save_assets_for_adv(&self, pool: &Pool<MySql>, adv: &ReleaseToken, assets: &Vec<ResQueryAssets>) {
-
+        
     }
 }
