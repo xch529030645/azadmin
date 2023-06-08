@@ -2,7 +2,7 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::HashMap, vec};
 use chrono::{Local, DateTime, Days};
 use sqlx::{Pool, MySql, Row, Execute};
 
-use crate::{model::*, lib::response::ResReportVo};
+use crate::{model::*, lib::response::{ResReportVo, ResQueryAssets}};
 
 // use crate::{lib::{server_api, req::{AuthorizationCode}, response::*}, model::*, auth};
 
@@ -1006,4 +1006,50 @@ pub async fn get_advertiser_tokens(pool: &Pool<MySql>) -> Vec<ReleaseToken> {
             vec![]
         }
     }
+}
+
+async fn get_assets_aid(pool: &Pool<MySql>, sha256: &String) -> i32 {
+    let rs = sqlx::query("SELECT id FROM assets WHERE file_hash_sha256=?")
+        .bind(sha256)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let id: i32 = v.get(0);
+            id
+        },
+        Err(e) => {
+            0
+        }
+    }
+}
+
+
+pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQueryAssets) {
+    let mut aid = get_assets_aid(pool, &inv.file_hash_sha256).await;
+    if aid == 0 {
+        let rs = sqlx::query("INSERT INTO azadmin.assets
+        (assets_name, file_hash_sha256, file_url, asset_type, width, height, video_play_duration, file_size, file_format, create_time)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+        ")
+        .bind(&inv.asset_name)
+        .bind(&inv.file_hash_sha256)
+        .bind(&inv.file_url)
+        .bind(&inv.asset_type)
+        .bind(&inv.width)
+        .bind(&inv.height)
+        .bind(&inv.video_play_duration)
+        .bind(&inv.file_size)
+        .bind(&inv.file_format)
+        .execute(pool)
+        .await;
+        aid = get_assets_aid(pool, &inv.file_hash_sha256).await;
+    }
+
+    sqlx::query("INSERT INTO assets_advertiser (assets_id, aid, advertiser_id) SELECT ?,?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM assets_advertiser WHERE assets_id=?)")
+        .bind(inv.asset_id)
+        .bind(aid)
+        .bind(advertiser_id)
+        .bind(inv.asset_id)
+        .execute(pool).await;
 }

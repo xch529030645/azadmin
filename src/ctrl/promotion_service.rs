@@ -210,7 +210,7 @@ impl PromotionService {
                 let rs = server_api::query_assets(access_token, &adv.advertiser_id, page).await;
                 if let Some(rs) = rs {
                     let total_page = (rs.total as f32 / 50.0_f32).ceil() as i32;
-                    self.save_assets_for_adv(pool, &adv, &rs.creative_asset_infos).await;
+                    self.save_assets_for_adv(pool, &adv.advertiser_id, &rs.creative_asset_infos).await;
                     if page >= total_page {
                         break
                     } else {
@@ -223,7 +223,9 @@ impl PromotionService {
         }
     }
 
-    async fn save_assets_for_adv(&self, pool: &Pool<MySql>, adv: &ReleaseToken, assets: &Vec<ResQueryAssets>) {
-        
+    async fn save_assets_for_adv(&self, pool: &Pool<MySql>, advertiser_id: &String, assets: &Vec<ResQueryAssets>) {
+        for inv in assets {
+            game_repository::save_assets(pool, advertiser_id, inv).await;
+        }
     }
 }
