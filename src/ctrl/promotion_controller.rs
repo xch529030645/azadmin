@@ -39,5 +39,6 @@ pub async fn get_position(_: UserData, data: web::Data<AppState>, promotion_serv
 }
 
 pub async fn fetch_assets(pool: &Pool<MySql>, promotion_service: &PromotionService) {
+    println!("start fetch_assets");
     promotion_service.fetch_assets(pool).await;
 }

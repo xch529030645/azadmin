@@ -343,7 +343,7 @@ pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i
         page, 
         page_size: 50
     };
-    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/position/query", "GET", access_token, &data).await;
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/creative_asset/query", "GET", access_token, &data).await;
     match rs {
         Some(txt) => {
             let rs: Result<ResQueryAssetsResult, serde_json::Error> = serde_json::from_str(txt.as_str());
@@ -356,7 +356,7 @@ pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i
                     }
                 },
                 Err(e) => {
-                    println!("query_audience_package err: {}", e);
+                    println!("query_assets err: {}", &txt);
                     None
                 }
             }
