@@ -151,7 +151,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
     // println!("{:?}", &data);
     let mut ret: Option<ResReports> = None;
     loop {
-        let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers).json(&data).send().await;
+        let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers.clone()).json(&data).send().await;
         match rs {
             Ok(v) => {
                 // let txt = v.text().await.unwrap();
