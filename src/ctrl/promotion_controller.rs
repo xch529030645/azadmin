@@ -38,6 +38,30 @@ pub async fn get_position(_: UserData, data: web::Data<AppState>, promotion_serv
     return Results::done(&rs.as_ref());
 }
 
+#[post("/azadmin/query_position_detail")]
+pub async fn query_position_detail(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqQueryPositionDetail>) -> impl Responder {
+    let rs = promotion_service.query_position_detail(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
+
+#[post("/azadmin/query_assets")]
+pub async fn query_assets(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<FormQueryAssets>) -> impl Responder {
+    let rs = promotion_service.query_assets(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
+
+#[post("/azadmin/get_collection_tasks")]
+pub async fn get_collection_tasks(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>) -> impl Responder {
+    let rs = promotion_service.get_collection_tasks(&data.pool).await;
+    return Results::done(&rs.as_ref());
+}
+
+#[post("/azadmin/update_collection_tasks")]
+pub async fn update_collection_tasks(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<FormUpdateCollectionStatus>) -> impl Responder {
+    let err = promotion_service.update_collection_tasks(&data.pool, &param.0).await;
+    return Results::err(err);
+}
+
 pub async fn fetch_assets(pool: &Pool<MySql>, promotion_service: &PromotionService) {
     println!("start fetch_assets");
     promotion_service.fetch_assets(pool).await;

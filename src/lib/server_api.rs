@@ -1,8 +1,8 @@
-use std::{collections::HashMap, fs, str::FromStr};
+use std::{collections::HashMap, fs, str::FromStr, borrow::Cow};
 
 use reqwest::header::HeaderMap;
 use serde::{Serialize, de};
-use serde_json::from_str;
+use serde_json::{from_str, Value};
 
 use crate::model::*;
 
@@ -150,7 +150,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
     let data = ReqQueryAdGroupReport::create(advertiser_id.to_string(), "STAT_TIME_GRANULARITY_DAILY".to_string(), page, page_size, start_date.to_string(), end_date.to_string());
     // println!("{:?}", &data);
     let mut ret: Option<ResReports> = None;
-    loop {
+    // loop {
         let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers.clone()).json(&data).send().await;
         match rs {
             Ok(v) => {
@@ -162,7 +162,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 match at {
                     Ok(at) => {
                         ret = Some(at);
-                        break;
+                        // break;
                     },
                     Err(e) => {
                         println!("query_reports json err: {}", e);
@@ -173,7 +173,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 println!("query_reports http err: {}", e);
             }
         }
-    }
+    // }
 
     ret
     
@@ -344,11 +344,12 @@ pub async fn query_position(access_token: &String, advertiser_id: &String) -> Op
     curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/position/query", "GET", access_token, &data).await
 }
 
-pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i32) -> Option<ResQueryAssetsData> {
+pub async fn query_assets(access_token: &String, advertiser_id: &String, filtering: Option<HashMap<String, String>>, page: i32) -> Option<ResQueryAssetsData> {
     let data = ReqQueryAssets {
         advertiser_id: advertiser_id.clone(), 
         page, 
-        page_size: 50
+        page_size: 50,
+        filtering
     };
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/creative_asset/query", "GET", access_token, &data).await;
     match rs {
@@ -369,6 +370,146 @@ pub async fn query_assets(access_token: &String, advertiser_id: &String, page: i
             }
         },
         None => None
+    }
+}
+
+pub async fn query_position_detail(access_token: &String, advertiser_id: &String, creative_size_id: &String) -> Option<String> {
+    let data = ReqQueryPositionDetail2 {
+        advertiser_id: advertiser_id.clone(), 
+        filtering: ReqQueryPositionDetailFilter {
+            creative_size_id: creative_size_id.clone(),
+            product_type: "ANDROID_APP".to_string()
+        }
+    };
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/position_detail/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<Value, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    let code = v.get("code").unwrap().as_str().unwrap();
+                    if code.eq("200") {
+                        let data = v.get("data").unwrap();
+                        Some(data.to_string())
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("query_assets err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn upload_file(access_token: &String, advertiser_id: &String, file_path: &String, file_name: &String) -> Option<ResUploadAssetsData> {
+    let file_token = get_upload_token(access_token, advertiser_id).await;
+    if let Some(file_token) = file_token {
+        let mut headers = HeaderMap::new();
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+        headers.insert("Authorization", ("Bearer ".to_string()+access_token).parse().unwrap());
+
+        let file_byte=std::fs::read(file_path).unwrap();
+        let part= reqwest::multipart::Part::bytes(Cow::from(file_byte)).file_name(file_name.clone());
+        let file_token_part = reqwest::multipart::Part::text(file_token);
+        let asset_name_part = reqwest::multipart::Part::text(file_name.clone());
+        let form = reqwest::multipart::Form::new().part("file", part)
+            .part("file_token", file_token_part)
+            .part("asset_name", asset_name_part);
+        let rs = reqwest::Client::new()
+            .post("https://ads-dra.cloud.huawei.com/ads/v1/tools/creative_asset/create")
+            .headers(headers)
+            .multipart(form)
+            .send()
+            .await;
+        match rs {
+            Ok(v) => {
+                let txt = v.text().await.unwrap();
+                let res: Result<ResUploadAssets, serde_json::Error> = serde_json::from_str(&txt);
+                match res {
+                    Ok(v) => {
+                        if v.code == "200" {
+                            Some(v.data)
+                        } else {
+                            println!("upload_file 3{}", &txt);
+                            None
+                        }
+                    },
+                    Err(e) => {
+                        println!("upload_file 2 {}, {}", e, &txt);
+                        None
+                    }
+                }
+            },
+            Err(e) => {
+                println!("upload_file: {}", e);
+                None
+            }
+        }
+    } else {
+        println!("get file_token failed");
+        None
+    }
+}
+
+pub async fn get_upload_token(access_token: &String, advertiser_id: &String) -> Option<String> {
+    let mut data = HashMap::new();
+    data.insert("advertiser_id", advertiser_id);
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/file/token/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResUploadToken, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        Some(v.data.file_token)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("get_upload_token err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn update_campaign_status(access_token: &String, advertiser_id: &String, campangn_id: &String, campaign_status: &String) -> bool {
+    /**
+     * OPERATION_ENABLE
+     * OPERATION_DISABLE
+     * OPERATION_DELETE
+     */
+    let mut data = HashMap::new();
+    data.insert("advertiser_id", advertiser_id);
+    data.insert("campangn_id", campangn_id);
+    data.insert("campaign_status", campaign_status);
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/update", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResCustom, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        true
+                    } else {
+                        println!("update_campaign_status err 2: {}", v.message);
+                        false
+                    }
+                },
+                Err(e) => {
+                    println!("update_campaign_status err: {}", e);
+                    false
+                }
+            }
+        },
+        None => false
     }
 }
 
@@ -406,3 +547,5 @@ pub async fn get(url: &String) -> Option<String> {
         }
     }
 }
+
+

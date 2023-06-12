@@ -384,6 +384,7 @@ dependencies = [
  "rust-crypto",
  "serde",
  "serde_json",
+ "sha256",
  "sqlx",
  "ssh-rs",
  "uuid",
@@ -2044,6 +2045,7 @@ dependencies = [
  "js-sys",
  "log",
  "mime",
+ "mime_guess",
  "native-tls",
  "once_cell",
  "percent-encoding",
@@ -2362,6 +2364,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest 0.10.6",
+]
+
+[[package]]
+name = "sha256"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08a975c1bc0941703000eaf232c4d8ce188d8d5408d6344b6b2c8c6262772828"
+dependencies = [
+ "hex",
+ "sha2 0.10.6",
 ]
 
 [[package]]

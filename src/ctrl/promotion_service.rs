@@ -1,9 +1,9 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}};
+use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, fs::{File, self}, io::{Write, Read}, borrow::BorrowMut, ops::Index, path};
 use chrono::{Local, DateTime, Days};
 use serde_json::Value;
 use sqlx::{Pool, MySql, Row};
 
-use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData};
+use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData, ctrl::promotion_service};
 
 use super::game_repository;
 // use async_recursion::async_recursion;
@@ -112,7 +112,7 @@ impl PromotionService {
     }
 
     pub async fn get_position(&self, pool: &Pool<MySql>, advertiser_id: &String) -> Option<Vec<Position>> {
-        let rs = sqlx::query_as::<_, Position>("SELECT * FROM positions WHERE advertiser_id=?")
+        let rs = sqlx::query_as::<_, Position>("SELECT creative_size_id, advertiser_id, content FROM positions WHERE advertiser_id=?")
             .bind(advertiser_id)
             .fetch_all(pool).await;
         match rs {
@@ -142,10 +142,10 @@ impl PromotionService {
                     let creative_size_info_list = data.get("creative_size_info_list").unwrap().as_array().unwrap();
                     let mut ret: Vec<Position> = Vec::new();
                     for info in creative_size_info_list {
-                        let creative_size_id: i64 = info.get("creative_size_id").unwrap().as_i64().unwrap();
+                        let creative_size_id: String = info.get("creative_size_id").unwrap().as_i64().unwrap().to_string();
                         let content = info.to_string();
                         ret.push(Position {
-                            creative_size_id,
+                            creative_size_id: creative_size_id.clone(),
                             advertiser_id: advertiser_id.clone(),
                             content
                         })
@@ -206,28 +206,147 @@ impl PromotionService {
     async fn fetch_assets_for_adv(&self, pool: &Pool<MySql>, adv: &ReleaseToken) {
         println!("fetch_assets_for_adv: {}", adv.advertiser_id);
         if let Some(access_token) = &adv.access_token {
-            let mut page = 1;
-            loop {
-                println!("fetch_assets_for_adv: {}, page: {}", adv.advertiser_id, page);
-                let rs = server_api::query_assets(access_token, &adv.advertiser_id, page).await;
-                if let Some(rs) = rs {
-                    let total_page = (rs.total as f32 / 50.0_f32).ceil() as i32;
-                    self.save_assets_for_adv(pool, &adv.advertiser_id, &rs.creative_asset_infos).await;
-                    if page >= total_page {
-                        break
-                    } else {
-                        page = page + 1;
+            // let mut page = 1;
+            let total_page = Self::fetch_and_save_assets(pool, access_token, &adv.advertiser_id, 1).await;
+
+            if total_page > 1 {
+                let mut thread_headlers = vec![];
+                for page in 2 .. total_page {
+                    let mysql = pool.clone();
+                    let advertiser_id = adv.advertiser_id.clone();
+                    let access_token_copy = access_token.clone();
+
+                    let handle = actix_rt::spawn(async move {
+                        Self::fetch_and_save_assets(&mysql, &access_token_copy, &advertiser_id, page).await;
+                    });
+                    thread_headlers.push(handle);
+                }
+
+                for handle in thread_headlers {
+                    if !handle.is_finished() {
+                        handle.await;
                     }
-                } else {
-                    break
                 }
             }
+            
+            
+            // loop {
+            //     println!("fetch_assets_for_adv: {}, page: {}", adv.advertiser_id, page);
+            //     let rs = server_api::query_assets(access_token, &adv.advertiser_id, page).await;
+            //     if let Some(rs) = rs {
+            //         let total_page = (rs.total as f32 / 50.0_f32).ceil() as i32;
+            //         self.save_assets_for_adv(pool, &adv.advertiser_id, &rs.creative_asset_infos).await;
+            //         if page >= total_page {
+            //             break
+            //         } else {
+            //             page = page + 1;
+            //         }
+            //     } else {
+            //         break
+            //     }
+            // }
         }
     }
 
-    async fn save_assets_for_adv(&self, pool: &Pool<MySql>, advertiser_id: &String, assets: &Vec<ResQueryAssets>) {
+    pub async fn save_assets_for_adv(pool: &Pool<MySql>, advertiser_id: &String, assets: &Vec<ResQueryAssets>) {
         for inv in assets {
             game_repository::save_assets(pool, advertiser_id, inv).await;
         }
     }
+
+    pub async fn fetch_and_save_assets(pool: &Pool<MySql>, access_token: &String, advertiser_id: &String, page: i32) -> i32 {
+        let rs = server_api::query_assets(access_token, advertiser_id, None, page).await;
+        if let Some(rs) = rs {
+            let total_page = (rs.total as f32 / 50.0_f32).ceil() as i32;
+            Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
+            total_page
+        } else {
+            0
+        }
+    }
+
+
+    pub async fn query_position_detail(&self, pool: &Pool<MySql>, params: &ReqQueryPositionDetail) -> Option<PositionDetail> {
+        let mut detail = game_repository::get_position_detail(pool, &params.creative_size_id).await;
+        if detail.is_none() {
+            let advertiser_id = &params.advertiser_id;
+            let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
+
+            let rs = server_api::query_position_detail(&access_token, advertiser_id, &params.creative_size_id).await;
+            if let Some(txt) = rs {
+                game_repository::update_position_detail(pool, &params.creative_size_id, &txt).await;
+                detail = Some(txt)
+            }
+        }
+        
+        
+        if detail.is_some() {
+            Some(PositionDetail {
+                creative_size_id: params.creative_size_id.clone(),
+                detail
+            })
+        } else {
+            None
+        }
+    }
+
+    pub async fn query_assets(&self, pool: &Pool<MySql>, req: &FormQueryAssets) -> Option<Vec<Assets>> {
+        game_repository::query_assets(pool, req).await
+    }
+
+
+    pub async fn upload_file(&self, pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<String> {
+        let mut ret = None;
+        let file_url = game_repository::get_assets_url(pool, aid).await;
+        if let Some(file_url) = file_url {
+            let names: Vec<&str> = file_url.split("/").collect();
+            let name = names.last().unwrap().to_string();
+            let tmp_path = "./tmp/".to_string() + name.as_str();
+            let rs = self.download(&file_url, &tmp_path).await;
+            if rs.is_ok() {
+                let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
+                let rs =server_api::upload_file(&access_token, advertiser_id, &tmp_path, &name).await;
+                if let Some(data) = rs {
+                    let mut filtering = HashMap::new();
+                    filtering.insert("asset_id".to_string(), data.asset_id.clone());
+                    let rs = server_api::query_assets(&access_token, advertiser_id, Some(filtering), 1).await;
+                    if let Some(rs) = rs {
+                        Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
+                    }
+                    ret = Some(data.asset_id);
+                }
+                std::fs::remove_file(tmp_path);
+            }
+        }
+        ret
+    }
+
+    pub async fn download(&self, file_url: &String, tmp_path: &String) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        if !path::Path::new("./tmp").exists() {
+            std::fs::create_dir("./tmp");
+        }
+        let mut file = match File::create(&tmp_path) {
+            Err(why) => return Err(Box::new(why)),
+            Ok(file) => file,
+        };
+        let req = reqwest::Client::new().get(file_url);
+        let rep = req.send().await?.bytes().await?;
+        // if !rep.status().is_success() {
+        //     return;
+        // }
+
+        let data: std::result::Result<Vec<_>, _> = rep.bytes().collect();
+        file.write_all(&data.unwrap())?;
+        Ok(())
+    }
+
+
+    pub async fn get_collection_tasks(&self, pool: &Pool<MySql>) -> Option<Vec<CollectionTask>> {
+        game_repository::get_collection_tasks(pool).await
+    }
+    
+    pub async fn update_collection_tasks(&self, pool: &Pool<MySql>, param: &FormUpdateCollectionStatus) -> i32 {
+        game_repository::update_collection_tasks(pool, param).await
+    }
+    
 }

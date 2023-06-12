@@ -387,6 +387,12 @@ pub struct FormAdvertiser {
     pub advertiser_id: String,
 }
 
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryPositionDetail {
+    pub advertiser_id: String,
+    pub creative_size_id: String
+}
+
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct AudiencePreview {
     pub targeting_id: i64,
@@ -397,16 +403,72 @@ pub struct AudiencePreview {
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct Position {
-    pub creative_size_id: i64,
+    pub creative_size_id: String,
     pub advertiser_id: String,
     pub content: String
 }
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct PositionDetail {
+    pub creative_size_id: String,
+    pub detail: Option<String>
+}
 
 #[derive(Serialize,Deserialize)]
 pub struct TaskQueryReports {
     pub advertiser_id: String,
     pub date: String
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct FormQueryAssets {
+    pub asset_type: String,
+    pub width: i32,
+    pub height: i32,
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct FormUpdateCollectionStatus {
+    pub task_id: i32,
+    pub enabled: bool
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct Assets {
+    pub id: i32,
+    pub assets_name: String,
+    pub file_hash_sha256: String,
+    pub file_url: Option<String>,
+    pub asset_type: Option<String>,
+    pub width: i32,
+    pub height: i32,
+    pub video_play_duration: Option<i32>,
+    pub file_size: Option<i32>,
+    pub file_format: Option<String>,
+    pub local_path: Option<String>
+}
+
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct CollectionTask {
+    pub id: i32,
+    pub enabled: bool,
+    pub remark: Option<String>,
+    pub min_count: f64,
+    pub require_roas: f64,
+    pub check_hour: i32,
+    pub check_minute: i32,
+    pub operation: i32
+}
+
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct CampaignStat {
+    pub iaa: f64,
+    pub cost: f64,
+    pub campaign_id: String,
+    pub advertiser_id: String
 }
 
 #[derive(Deserialize, Serialize)]

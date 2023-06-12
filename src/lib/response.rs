@@ -267,3 +267,35 @@ pub struct ResQueryAssetsResult {
     pub code: String,
     pub data: ResQueryAssetsData
 }
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUploadTokenData {
+    pub file_token: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUploadToken {
+    pub code: String,
+    pub data: ResUploadTokenData
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCustom {
+    pub code: String,
+    pub message: String
+}
+
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUploadAssetsData {
+    pub url: String,
+    pub asset_id: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUploadAssets {
+    pub code: String,
+    pub data: ResUploadAssetsData
+}

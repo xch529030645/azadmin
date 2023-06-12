@@ -146,5 +146,19 @@ pub struct ReqQueryAudience {
 pub struct ReqQueryAssets {
     pub advertiser_id: String,
     pub page: i32,
-    pub page_size: i32
+    pub page_size: i32,
+    pub filtering: Option<HashMap<String, String>>
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryPositionDetailFilter {
+    pub creative_size_id: String,
+    pub product_type: String,
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryPositionDetail2 {
+    pub advertiser_id: String,
+    pub filtering: ReqQueryPositionDetailFilter,
 }

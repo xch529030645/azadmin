@@ -1030,7 +1030,7 @@ pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQuery
     if aid == 0 {
         let rs = sqlx::query("INSERT INTO azadmin.assets
         (assets_name, file_hash_sha256, file_url, asset_type, width, height, video_play_duration, file_size, file_format, create_time)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE file_url=VALUES(file_url),asset_type=VALUES(asset_type),width=VALUES(width),height=VALUES(height),video_play_duration=VALUES(video_play_duration),file_size=VALUES(file_size),file_format=VALUES(file_format);
         ")
         .bind(&inv.asset_name)
         .bind(&inv.file_hash_sha256)
@@ -1052,4 +1052,182 @@ pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQuery
         .bind(advertiser_id)
         .bind(inv.asset_id)
         .execute(pool).await;
+}
+
+pub async fn update_position_detail(pool: &Pool<MySql>, creative_size_id: &String, txt: &str) {
+    let rs = sqlx::query("UPDATE positions SET detail=? WHERE creative_size_id=?")
+        .bind(txt)
+        .bind(creative_size_id)
+        .execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("update_position_detail {}", e)
+        }
+    }
+}
+
+pub async fn get_position_detail(pool: &Pool<MySql>, creative_size_id: &String) -> Option<String> {
+    let rs = sqlx::query("SELECT detail FROM positions WHERE creative_size_id=?")
+        .bind(creative_size_id)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let id: Option<String> = v.get(0);
+            id
+        },
+        Err(e) => {
+            None
+        }
+    }
+}
+
+pub async fn get_assets_url(pool: &Pool<MySql>, aid: i32) -> Option<String> {
+    let rs = sqlx::query("SELECT IFNULL(file_url, local_path) FROM assets WHERE id=?")
+        .bind(aid)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let id: Option<String> = v.get(0);
+            id
+        },
+        Err(e) => {
+            None
+        }
+    }
+}
+
+pub async fn query_assets(pool: &Pool<MySql>, req: &FormQueryAssets) -> Option<Vec<Assets>> {
+    let rs = sqlx::query_as::<_, Assets>("SELECT * FROM assets WHERE asset_type = ? AND width = ? AND height = ?")
+        .bind(&req.asset_type)
+        .bind(req.width)
+        .bind(req.height)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            None
+        }
+    }
+}
+
+pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<CollectionTask>> {
+    let today = Local::now().format("%Y-%m-%d").to_string();
+
+    let rs = sqlx::query_as::<_, CollectionTask>("SELECT a.* FROM collection_tasks a LEFT JOIN collection_tasks_records b ON a.id=b.task_id AND b.`date` =? WHERE ISNULL(b.task_id) AND a.enabled = 1")
+        .bind(today)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_uncollection_tasks: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_today_campaign_stat(pool: &Pool<MySql>) -> Option<Vec<CampaignStat>> {
+    let today = Local::now().format("%Y-%m-%d").to_string();
+
+    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a left join campaign_status b on	a.campaign_id = b.campaign_id WHERE a.stat_datetime =? and a.cost>0.5 and a.attribution_income_iaa >0 and (ISNULL(b.status) or b.status =0) group by a.campaign_id, a.advertiser_id")
+        .bind(today)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_today_campaign_stat: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn done_collection_task(pool: &Pool<MySql>, id: i32) {
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    
+    let rs = sqlx::query("INSERT INTO collection_tasks_records (task_id, `date`) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM collection_tasks_records WHERE task_id=? AND `date`=?)")
+        .bind(id)
+        .bind(&today)
+        .bind(id)
+        .bind(&today)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("done_collection_task: {}", e);
+        }
+    }
+}
+
+pub async fn update_campaign_status(pool: &Pool<MySql>, campaign_id: &str, status: i32) {
+    let rs = sqlx::query("INSERT INTO campaign_status (campaign_id, `status`) VALUES (?,?) ON DUPLICATE KEY UPDATE `status`=VALUES(`status`)")
+        .bind(campaign_id)
+        .bind(status)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("update_campaign_status: {}", e);
+        }
+    }
+}
+
+pub async fn add_collection_task_execute_records(pool: &Pool<MySql>, today: &String, task_id: i32, operation: i32, campaign_id: &str) {
+    let rs = sqlx::query("INSERT INTO collection_task_execute_records (`date`, `task_id`, operation, campaign_id) VALUES (?,?,?,?)")
+        .bind(today)
+        .bind(task_id)
+        .bind(operation)
+        .bind(campaign_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("add_collection_task_execute_records: {}", e);
+        }
+    }
+}
+
+pub async fn get_collection_tasks(pool: &Pool<MySql>) -> Option<Vec<CollectionTask>> {
+    let rs = sqlx::query_as::<_, CollectionTask>("SELECT * FROM collection_tasks")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_collection_tasks: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn update_collection_tasks(pool: &Pool<MySql>, param: &FormUpdateCollectionStatus) -> i32 {
+    let rs = sqlx::query("UPDATE collection_tasks SET enabled=? WHERE id=?")
+        .bind(param.enabled)
+        .bind(param.task_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            0
+        },
+        Err(e) => {
+            println!("update_collection_tasks: {}", e);
+            1
+        }
+    }
 }

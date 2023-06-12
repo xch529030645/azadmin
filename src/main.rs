@@ -18,6 +18,8 @@ use crate::{ctrl::{game_service::GameService, promotion_service::PromotionServic
 
 #[get("/azadmin/test")]
 pub async fn test() -> impl Responder {
+    // let bytes = std::fs::read(path).unwrap();  // Vec<u8>
+    // let hash = sha256::digest_bytes(&bytes);
     HttpResponse::Ok().body("ok")
 }
 
@@ -137,6 +139,10 @@ async fn main() -> std::io::Result<()> {
             .service(promotion_controller::sync_audience_package)
             .service(promotion_controller::get_audience_package)
             .service(promotion_controller::get_position)
+            .service(promotion_controller::query_position_detail)
+            .service(promotion_controller::query_assets)
+            .service(promotion_controller::get_collection_tasks)
+            .service(promotion_controller::update_collection_tasks)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?
