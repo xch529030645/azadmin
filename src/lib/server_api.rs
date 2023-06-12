@@ -150,7 +150,8 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
     let data = ReqQueryAdGroupReport::create(advertiser_id.to_string(), "STAT_TIME_GRANULARITY_DAILY".to_string(), page, page_size, start_date.to_string(), end_date.to_string());
     // println!("{:?}", &data);
     let mut ret: Option<ResReports> = None;
-    // loop {
+    let mut times = 0;
+    loop {
         let rs = client.post("https://ads-dra.cloud.huawei.com/openapi/v2/reports/adgroup/query").headers(headers.clone()).json(&data).send().await;
         match rs {
             Ok(v) => {
@@ -162,7 +163,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 match at {
                     Ok(at) => {
                         ret = Some(at);
-                        // break;
+                        break;
                     },
                     Err(e) => {
                         println!("query_reports json err: {}", e);
@@ -173,7 +174,11 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 println!("query_reports http err: {}", e);
             }
         }
-    // }
+        times = times + 1;
+        if times > 1 {
+            break;
+        }
+    }
 
     ret
     
