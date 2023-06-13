@@ -1231,3 +1231,19 @@ pub async fn update_collection_tasks(pool: &Pool<MySql>, param: &FormUpdateColle
         }
     }
 }
+
+pub async fn get_collection_operations(pool: &Pool<MySql>, param: &FormCollectionId) -> Option<Vec<CollectionExecuteRecords>> {
+    let rs = sqlx::query_as::<_, CollectionExecuteRecords>("SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records WHERE task_id=? ORDER BY id DESC")
+        .bind(param.task_id)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_collection_operations: {}", e);
+            None
+        }
+    }
+}

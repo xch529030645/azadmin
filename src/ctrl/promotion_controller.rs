@@ -62,6 +62,13 @@ pub async fn update_collection_tasks(_: UserData, data: web::Data<AppState>, pro
     return Results::err(err);
 }
 
+#[post("/azadmin/get_collection_operations")]
+pub async fn get_collection_operations(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<FormCollectionId>) -> impl Responder {
+    let rs = promotion_service.get_collection_operations(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
+
+
 pub async fn fetch_assets(pool: &Pool<MySql>, promotion_service: &PromotionService) {
     println!("start fetch_assets");
     promotion_service.fetch_assets(pool).await;

@@ -434,6 +434,11 @@ pub struct FormUpdateCollectionStatus {
     pub enabled: bool
 }
 
+#[derive(Serialize,Deserialize)]
+pub struct FormCollectionId {
+    pub task_id: i32
+}
+
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct Assets {
     pub id: i32,
@@ -455,7 +460,7 @@ pub struct CollectionTask {
     pub id: i32,
     pub enabled: bool,
     pub remark: Option<String>,
-    pub min_count: f64,
+    pub min_cost: f64,
     pub require_roas: f64,
     pub check_hour: i32,
     pub check_minute: i32,
@@ -470,6 +475,19 @@ pub struct CampaignStat {
     pub campaign_id: String,
     pub advertiser_id: String
 }
+
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct CollectionExecuteRecords {
+    pub id: i32,
+    pub date: String,
+    pub task_id: i32,
+    pub operation: i32,
+    pub campaign_id: String,
+    pub create_time: String,
+}
+
+
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {
