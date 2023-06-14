@@ -1137,7 +1137,7 @@ pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<Collection
 pub async fn get_today_campaign_stat(pool: &Pool<MySql>) -> Option<Vec<CampaignStat>> {
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a left join campaign_status b on	a.campaign_id = b.campaign_id WHERE a.stat_datetime =? and a.cost>0.5 and a.attribution_income_iaa >0 and (ISNULL(b.status) or b.status =0) group by a.campaign_id, a.advertiser_id")
+    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a left join campaign_status b on	a.campaign_id = b.campaign_id WHERE a.stat_datetime =? and a.cost>0.5 and (ISNULL(b.status) or b.status =0) group by a.campaign_id, a.advertiser_id")
         .bind(today)
         .fetch_all(pool)
         .await;
@@ -1184,12 +1184,14 @@ pub async fn update_campaign_status(pool: &Pool<MySql>, campaign_id: &str, statu
     }
 }
 
-pub async fn add_collection_task_execute_records(pool: &Pool<MySql>, today: &String, task_id: i32, operation: i32, campaign_id: &str) {
-    let rs = sqlx::query("INSERT INTO collection_task_execute_records (`date`, `task_id`, operation, campaign_id) VALUES (?,?,?,?)")
+pub async fn add_collection_task_execute_records(pool: &Pool<MySql>, today: &String, task_id: i32, operation: i32, campaign_id: &str, cost: f64, iaa: f64) {
+    let rs = sqlx::query("INSERT INTO collection_task_execute_records (`date`, `task_id`, operation, campaign_id, cost, iaa) VALUES (?,?,?,?,?,?)")
         .bind(today)
         .bind(task_id)
         .bind(operation)
         .bind(campaign_id)
+        .bind(cost)
+        .bind(iaa)
         .execute(pool)
         .await;
     match rs {

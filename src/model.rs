@@ -485,6 +485,8 @@ pub struct CollectionExecuteRecords {
     pub operation: i32,
     pub campaign_id: String,
     pub create_time: String,
+    pub cost: Option<f64>,
+    pub iaa: Option<f64>,
 }
 
 

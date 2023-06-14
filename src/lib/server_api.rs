@@ -493,7 +493,7 @@ pub async fn update_campaign_status(access_token: &String, advertiser_id: &Strin
      */
     let mut data = HashMap::new();
     data.insert("advertiser_id", advertiser_id);
-    data.insert("campangn_id", campangn_id);
+    data.insert("campaign_id", campangn_id);
     data.insert("campaign_status", campaign_status);
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/update", "POST", access_token, &data).await;
     match rs {
@@ -504,7 +504,7 @@ pub async fn update_campaign_status(access_token: &String, advertiser_id: &Strin
                     if v.code.eq("200") {
                         true
                     } else {
-                        println!("update_campaign_status err 2: {}", v.message);
+                        println!("update_campaign_status err 2: {:?}", v.message);
                         false
                     }
                 },

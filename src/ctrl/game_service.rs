@@ -1477,10 +1477,12 @@ impl GameService {
 
 
     pub async fn check_collection_tasks(&self, pool: &Pool<MySql>) {
+        println!("start check_collection_tasks");
         let now = Local::now();
         let today = now.format("%Y-%m-%d").to_string();
         let hour = now.hour() as i32;
         let minute = now.minute() as i32;
+
         let tasks = game_repository::get_uncollection_tasks(pool).await;
         if let Some(tasks) = tasks {
             if tasks.is_empty() {
@@ -1489,11 +1491,12 @@ impl GameService {
             if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {
                 let mut shutdown_ids = vec![];
                 for task in &tasks {
-                    if task.check_hour == hour && task.check_minute >= minute {
+                    if task.check_hour == hour && minute >= task.check_minute {
                         for stat in &stats {
                             if task.operation == 1 {
                                 let roas = stat.iaa / stat.cost;
                                 if roas < task.require_roas {
+                                    println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
                                     shutdown_ids.push((task, stat));
                                 }
                             }
@@ -1507,16 +1510,21 @@ impl GameService {
                         if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
                             let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
                             if suc {
+                                println!("update_campaign_status success {}", &vo.1.advertiser_id);
                                 game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                                game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id).await;
+                                game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
                             }
                         }
                     }
                 }
             }
             
+        } else {
+            println!("no check_collection_tasks");
         }
         
+        println!("done check_collection_tasks");
+
         // now.hour()
         // now.minute()
     }

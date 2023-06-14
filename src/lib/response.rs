@@ -283,7 +283,7 @@ pub struct ResUploadToken {
 #[derive(Deserialize, Serialize)]
 pub struct ResCustom {
     pub code: String,
-    pub message: String
+    pub message: Option<String>
 }
 
 
