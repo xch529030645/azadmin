@@ -143,6 +143,7 @@ async fn main() -> std::io::Result<()> {
             .service(promotion_controller::query_assets)
             .service(promotion_controller::get_collection_tasks)
             .service(promotion_controller::update_collection_tasks)
+            .service(promotion_controller::update_collection_advertisers)
             .service(promotion_controller::get_collection_operations)
             .service(test)
     })

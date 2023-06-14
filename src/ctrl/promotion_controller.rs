@@ -62,7 +62,7 @@ pub async fn update_collection_tasks(_: UserData, data: web::Data<AppState>, pro
     return Results::err(err);
 }
 
-#[post("/azadmin/update_collection_tasks")]
+#[post("/azadmin/update_collection_advertisers")]
 pub async fn update_collection_advertisers(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<FormUpdateCollectionAdvertisers>) -> impl Responder {
     let err = promotion_service.update_collection_advertisers(&data.pool, &param.0).await;
     return Results::err(err);
