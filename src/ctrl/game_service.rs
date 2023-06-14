@@ -1491,17 +1491,21 @@ impl GameService {
             if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {
                 let mut shutdown_ids = vec![];
                 for task in &tasks {
-                    if task.check_hour == hour && minute >= task.check_minute {
-                        for stat in &stats {
-                            if task.operation == 1 {
-                                let roas = stat.iaa / stat.cost;
-                                if roas < task.require_roas {
-                                    println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
-                                    shutdown_ids.push((task, stat));
+                    if let Some(advertisers) = &task.advertisers {
+                        if task.check_hour == hour && minute >= task.check_minute {
+                            for stat in &stats {
+                                if advertisers.contains(&stat.advertiser_id) {
+                                    if task.operation == 1 {
+                                        let roas = stat.iaa / stat.cost;
+                                        if roas < task.require_roas {
+                                            println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
+                                            shutdown_ids.push((task, stat));
+                                        }
+                                    }
                                 }
                             }
+                            game_repository::done_collection_task(pool, task.id).await;
                         }
-                        game_repository::done_collection_task(pool, task.id).await;
                     }
                 }
                 if !shutdown_ids.is_empty() {

@@ -464,7 +464,8 @@ pub struct CollectionTask {
     pub require_roas: f64,
     pub check_hour: i32,
     pub check_minute: i32,
-    pub operation: i32
+    pub operation: i32,
+    pub advertisers: Option<String>
 }
 
 
@@ -487,6 +488,13 @@ pub struct CollectionExecuteRecords {
     pub create_time: String,
     pub cost: Option<f64>,
     pub iaa: Option<f64>,
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct FormUpdateCollectionAdvertisers {
+    pub task_id: i32,
+    pub advertisers: String
 }
 
 

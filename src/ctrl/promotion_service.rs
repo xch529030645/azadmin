@@ -349,6 +349,10 @@ impl PromotionService {
         game_repository::update_collection_tasks(pool, param).await
     }
 
+    pub async fn update_collection_advertisers(&self, pool: &Pool<MySql>, param: &FormUpdateCollectionAdvertisers) -> i32 {
+        game_repository::update_collection_advertisers(pool, param).await
+    }
+
     pub async fn get_collection_operations(&self, pool: &Pool<MySql>, param: &FormCollectionId) -> Option<Vec<CollectionExecuteRecords>> {
         game_repository::get_collection_operations(pool, param).await
     }

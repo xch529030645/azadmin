@@ -1249,3 +1249,20 @@ pub async fn get_collection_operations(pool: &Pool<MySql>, param: &FormCollectio
         }
     }
 }
+
+pub async fn update_collection_advertisers(pool: &Pool<MySql>, param: &FormUpdateCollectionAdvertisers) -> i32 {
+    let rs = sqlx::query("UPDATE collection_tasks SET advertisers=? WHERE id=?")
+        .bind(&param.advertisers)
+        .bind(param.task_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            0
+        },
+        Err(e) => {
+            println!("update_collection_advertisers: {}", e);
+            1
+        }
+    }
+}
