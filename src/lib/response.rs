@@ -299,3 +299,16 @@ pub struct ResUploadAssets {
     pub code: String,
     pub data: ResUploadAssetsData
 }
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResFloorPriceData {
+    pub floor_price: f64
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResFloorPrice {
+    pub code: String,
+    pub message: Option<String>,
+    pub data: ResFloorPriceData
+}

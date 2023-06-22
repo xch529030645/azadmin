@@ -518,6 +518,37 @@ pub async fn update_campaign_status(access_token: &String, advertiser_id: &Strin
     }
 }
 
+pub async fn query_position_price(access_token: &String, advertiser_id: &String, creative_size_id: i64, price_type: &String) -> Option<ResFloorPriceData> {
+    let data = ReqQueryPositionPrice {
+        advertiser_id: advertiser_id.clone(),
+        filtering: ReqQueryPositionPriceFilter {
+            creative_size_id,
+            price_type: price_type.clone()
+        }
+    };
+    let rs = curl("https://ads.cloud.huawei.com/ads/v1/tools/position_price/query", "GET", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResFloorPrice, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code.eq("200") {
+                        Some(v.data)
+                    } else {
+                        println!("query_position_price err 2: {:?}", v.message);
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("query_position_price err: {}", e);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
 async fn curl<T: Serialize + ?Sized>(url: &str, method: &str, access_token: &str, data: &T) -> Option<String> {
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();

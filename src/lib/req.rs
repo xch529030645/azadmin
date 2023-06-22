@@ -162,3 +162,17 @@ pub struct ReqQueryPositionDetail2 {
     pub advertiser_id: String,
     pub filtering: ReqQueryPositionDetailFilter,
 }
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryPositionPriceFilter {
+    pub creative_size_id: i64,
+    pub price_type: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryPositionPrice {
+    pub advertiser_id: String,
+    pub filtering: ReqQueryPositionPriceFilter
+}
+

@@ -79,3 +79,10 @@ pub async fn fetch_assets(pool: &Pool<MySql>, promotion_service: &PromotionServi
     println!("start fetch_assets");
     promotion_service.fetch_assets(pool).await;
 }
+
+
+#[post("/azadmin/query_position_price")]
+pub async fn query_position_price(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqWebQueryPositionPrice>) -> impl Responder {
+    let rs = promotion_service.query_position_price(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}

@@ -1037,7 +1037,7 @@ impl GameService {
                     
                     
                 } else {
-                    println!("query_advertiser_reports failed: {}", reports.message);
+                    println!("query_advertiser_reports {} failed: {}", advertiser_id, reports.message);
                     if reports.message.eq("token已过期") {
                         self.check_market_access_token(pool).await;
                         return page_info;

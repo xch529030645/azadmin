@@ -356,5 +356,14 @@ impl PromotionService {
     pub async fn get_collection_operations(&self, pool: &Pool<MySql>, param: &FormCollectionId) -> Option<Vec<CollectionExecuteRecords>> {
         game_repository::get_collection_operations(pool, param).await
     }
+
+    pub async fn query_position_price(&self, pool: &Pool<MySql>, param: &ReqWebQueryPositionPrice) -> Option<ResFloorPriceData> {
+        let access_token = game_repository::get_marketing_access_token(pool, &param.advertiser_id).await;
+        if let Some(access_token) = access_token {
+            server_api::query_position_price(&access_token, &param.advertiser_id, param.creative_size_id, &param.price_type).await
+        } else {
+            None
+        }
+    }
     
 }

@@ -498,6 +498,13 @@ pub struct FormUpdateCollectionAdvertisers {
 }
 
 
+#[derive(Serialize,Deserialize)]
+pub struct ReqWebQueryPositionPrice {
+    pub advertiser_id: String,
+    pub creative_size_id: i64,
+    pub price_type: String
+}
+
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {
