@@ -773,7 +773,7 @@ impl GameService {
                                             break;
                                         }
                                     } else {
-                                        break;
+                                        // break;
                                     }
                                 }
                             } else {
