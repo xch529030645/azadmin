@@ -224,7 +224,7 @@ pub struct ResQueryAudienceInfo {
     pub current_custom_location_struct: Option<CustomLocation>,
     pub gender_struct: Option<CustomLocation>,
     pub age_struct: Option<CustomLocation>,
-    pub ai_target_flag: String
+    pub ai_target_flag: Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
