@@ -507,10 +507,47 @@ pub struct ReqWebQueryPositionPrice {
 
 
 #[derive(Serialize,Deserialize)]
-pub struct ReqCreateAds {
+pub struct ReqCreativeAssets {
+    pub id: i32
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreative {
+    pub creative_name: String,
+    pub creative_size_subtype: String,
+    pub text: String,
+    pub icons: Option<Vec<ReqCreativeAssets>>,
+    pub images: Option<Vec<ReqCreativeAssets>>,
+    pub videos: Option<Vec<ReqCreativeAssets>>
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqReadyAd {
+    pub ad_name: String,
     pub advertiser_id: String,
-    pub creative_size_id: String,
-    pub price_type: String
+    pub app: i32,
+    pub audience_package: i32,
+    pub bid: String,
+    pub bid_type: String,
+    pub budget: String,
+    pub campaign_name: String,
+    pub date_type: i32,
+    pub open_search: bool,
+    pub position: String,
+    pub promotion_date: Vec<String>,
+    pub promotion_target: i32,
+    pub promotion_time: Option<Vec<String>>,
+    pub time_type: i32,
+    pub creatives: Vec<ReqCreative>
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateAds {
+    pub request_id: String,
+    pub ad_list: Vec<ReqReadyAd>>
 }
 
 
