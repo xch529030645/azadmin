@@ -547,7 +547,7 @@ pub struct ReqReadyAd {
 #[derive(Serialize,Deserialize)]
 pub struct ReqCreateAds {
     pub request_id: String,
-    pub ad_list: Vec<ReqReadyAd>>
+    pub ad_list: Vec<ReqReadyAd>
 }
 
 
