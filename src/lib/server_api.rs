@@ -518,14 +518,15 @@ pub async fn update_campaign_status(access_token: &String, advertiser_id: &Strin
     }
 }
 
-pub async fn query_position_price(access_token: &String, advertiser_id: &String, creative_size_id: i64, price_type: &String) -> Option<ResFloorPriceData> {
+pub async fn query_position_price(access_token: &String, advertiser_id: &String, creative_size_id: &String, price_type: &String) -> Option<ResFloorPriceData> {
     let data = ReqQueryPositionPrice {
         advertiser_id: advertiser_id.clone(),
         filtering: ReqQueryPositionPriceFilter {
-            creative_size_id,
+            creative_size_id: creative_size_id.parse::<i64>().unwrap(),
             price_type: price_type.clone()
         }
     };
+    
     let rs = curl("https://ads.cloud.huawei.com/ads/v1/tools/position_price/query", "GET", access_token, &data).await;
     match rs {
         Some(txt) => {
@@ -540,7 +541,7 @@ pub async fn query_position_price(access_token: &String, advertiser_id: &String,
                     }
                 },
                 Err(e) => {
-                    println!("query_position_price err: {}", e);
+                    println!("query_position_price err: {}", &txt);
                     None
                 }
             }

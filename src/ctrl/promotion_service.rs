@@ -360,10 +360,14 @@ impl PromotionService {
     pub async fn query_position_price(&self, pool: &Pool<MySql>, param: &ReqWebQueryPositionPrice) -> Option<ResFloorPriceData> {
         let access_token = game_repository::get_marketing_access_token(pool, &param.advertiser_id).await;
         if let Some(access_token) = access_token {
-            server_api::query_position_price(&access_token, &param.advertiser_id, param.creative_size_id, &param.price_type).await
+            server_api::query_position_price(&access_token, &param.advertiser_id, &param.creative_size_id, &param.price_type).await
         } else {
             None
         }
+    }
+
+    pub async fn create_ads(&self, pool: &Pool<MySql>, param: &ReqCreateAds) -> i32 {
+        0
     }
     
 }

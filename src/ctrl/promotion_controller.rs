@@ -86,3 +86,9 @@ pub async fn query_position_price(_: UserData, data: web::Data<AppState>, promot
     let rs = promotion_service.query_position_price(&data.pool, &param.0).await;
     return Results::done(&rs.as_ref());
 }
+
+#[post("/azadmin/create_ads")]
+pub async fn create_ads(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqCreateAds>) -> impl Responder {
+    let rs = promotion_service.create_ads(&data.pool, &param.0).await;
+    return Results::err(rs);
+}

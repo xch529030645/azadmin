@@ -501,7 +501,15 @@ pub struct FormUpdateCollectionAdvertisers {
 #[derive(Serialize,Deserialize)]
 pub struct ReqWebQueryPositionPrice {
     pub advertiser_id: String,
-    pub creative_size_id: i64,
+    pub creative_size_id: String,
+    pub price_type: String
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateAds {
+    pub advertiser_id: String,
+    pub creative_size_id: String,
     pub price_type: String
 }
 
