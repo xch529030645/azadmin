@@ -1030,7 +1030,7 @@ pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQuery
     if aid == 0 {
         let rs = sqlx::query("INSERT INTO azadmin.assets
         (assets_name, file_hash_sha256, file_url, asset_type, width, height, video_play_duration, file_size, file_format, create_time)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE file_url=VALUES(file_url),asset_type=VALUES(asset_type),width=VALUES(width),height=VALUES(height),video_play_duration=VALUES(video_play_duration),file_size=VALUES(file_size),file_format=VALUES(file_format);
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE asset_type=VALUES(asset_type),width=VALUES(width),height=VALUES(height),video_play_duration=VALUES(video_play_duration),file_size=VALUES(file_size),file_format=VALUES(file_format);
         ")
         .bind(&inv.asset_name)
         .bind(&inv.file_hash_sha256)
@@ -1263,6 +1263,79 @@ pub async fn update_collection_advertisers(pool: &Pool<MySql>, param: &FormUpdat
         Err(e) => {
             println!("update_collection_advertisers: {}", e);
             1
+        }
+    }
+}
+
+pub async fn get_app_product_id(pool: &Pool<MySql>, advertiser_id: &String, app: i32) -> Option<String> {
+    let rs = sqlx::query("SELECT b.product_id FROM apps a LEFT JOIN products b ON a.app_id = b.app_id WHERE a.id=? AND b.advertiser_id=?")
+        .bind(app)
+        .bind(advertiser_id)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let id = v.get(0);
+            id
+        },
+        Err(e) => {
+            println!("get_app_product_id: {}", e);
+            None
+        }
+    }
+}
+
+
+pub async fn get_app_id(pool: &Pool<MySql>, app: i32) -> Option<String> {
+    let rs = sqlx::query("SELECT app_id FROM apps WHERE id=?")
+        .bind(app)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let id = v.get(0);
+            Some(id)
+        },
+        Err(e) => {
+            println!("get_app_id: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn save_product_id(pool: &Pool<MySql>, app_id: &str, advertiser_id: &str, product_id: &String) {
+    let rs = sqlx::query("INSERT INTO azadmin.products
+    (app_id, advertiser_id, product_id)
+    VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE product_id=VALUES(product_id);    
+    ")
+        .bind(app_id)
+        .bind(advertiser_id)
+        .bind(product_id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("save_product_id: {}", e);
+        }
+    }
+}
+
+pub async fn get_asset_id(pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<i64> {
+    let rs = sqlx::query("SELECT assets_id FROM assets_advertiser WHERE aid=? AND advertiser_id=?
+    ")
+        .bind(aid)
+        .bind(advertiser_id)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let rs = v.get(0);
+            rs
+        },
+        Err(e) => {
+            println!("get_asset_id: {}", e);
+            None
         }
     }
 }

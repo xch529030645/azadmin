@@ -367,7 +367,58 @@ impl PromotionService {
     }
 
     pub async fn create_ads(&self, pool: &Pool<MySql>, param: &ReqCreateAds) -> i32 {
+        for ready_ad in &param.ad_list {
+            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &ready_ad.advertiser_id).await {
+                let daily_budget = ready_ad.budget.parse::<i32>().unwrap_or(0);
+                if daily_budget == 0 {
+                    continue;
+                }
+                let rs = server_api::create_campaign(access_token.as_str(), &ready_ad.advertiser_id, &ready_ad.campaign_name, daily_budget).await;
+                if let Some(rs_campaign) = rs {
+                    let mut product_id = game_repository::get_app_product_id(pool, &ready_ad.advertiser_id, ready_ad.app).await;
+                    if product_id.is_none() {
+                        let app_id = game_repository::get_app_id(pool, ready_ad.app).await;
+                        if let Some(app_id) = app_id {
+                            let rs_product = server_api::create_product(&access_token, &ready_ad.advertiser_id, &app_id).await;
+                            if let Some(rs_product) = rs_product {
+                                game_repository::save_product_id(pool, &app_id, &ready_ad.advertiser_id, &rs_product.product_id).await;
+                                product_id = Some(rs_product.product_id);
+                            }
+                        }
+                    }
+
+                    if product_id.is_some() {
+                        let rs: Option<ResCreateAdgroupData> = server_api::create_adgroup(&access_token, &rs_campaign.campaign_id, &product_id.unwrap(), ready_ad).await;
+                        if let Some(adgroup) = rs {
+                            self.create_creative(pool, &access_token, &adgroup, ready_ad).await;
+                        }
+                    }
+                    
+                }
+            }
+        }
         0
+    }
+
+    async fn create_creative(&self, pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) -> Option<i32> {
+        for creative in &param.creatives {
+            let mut icon_asset_id: Option<i64> = None;
+            if let Some(icons) = &creative.icons {
+                if let Some(inv) = icons.first() {
+                    let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
+                    if asset_id.is_none() {
+                        let url = game_repository::get_assets_url(pool, inv.id).await;
+                        if let Some(url) = url {
+                            
+                        }
+                    } else {
+                        icon_asset_id = asset_id;
+                    }
+                }
+                
+            }
+        }
+        None
     }
     
 }

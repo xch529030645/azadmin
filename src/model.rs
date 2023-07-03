@@ -519,7 +519,8 @@ pub struct ReqCreative {
     pub text: String,
     pub icons: Option<Vec<ReqCreativeAssets>>,
     pub images: Option<Vec<ReqCreativeAssets>>,
-    pub videos: Option<Vec<ReqCreativeAssets>>
+    pub videos: Option<Vec<ReqCreativeAssets>>,
+    pub size: String
 }
 
 
@@ -528,7 +529,7 @@ pub struct ReqReadyAd {
     pub ad_name: String,
     pub advertiser_id: String,
     pub app: i32,
-    pub audience_package: i32,
+    pub audience_package: i64,
     pub bid: String,
     pub bid_type: String,
     pub budget: String,
@@ -539,7 +540,7 @@ pub struct ReqReadyAd {
     pub promotion_date: Vec<String>,
     pub promotion_target: i32,
     pub promotion_time: Option<Vec<String>>,
-    pub time_type: i32,
+    pub time_type: String,
     pub creatives: Vec<ReqCreative>
 }
 
