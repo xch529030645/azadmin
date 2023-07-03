@@ -76,8 +76,27 @@ pub struct ReqCreateCampaign {
     pub advertiser_id: String,
     pub campaign_name: String,
     pub product_type: String,
-    pub daily_budget: i32,
-    pub sync_flow_resource_searchad: String
+    pub daily_budget: i32
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqProductInfoAppInfo {
+    pub app_id: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqProductInfo {
+    pub app: ReqProductInfoAppInfo
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateProduct {
+    pub advertiser_id: String,
+    pub product_type: String,
+    pub ag_app_type: String,
+    pub product_info: ReqProductInfo,
+
 }
 
 #[derive(Serialize,Deserialize)]
@@ -126,7 +145,7 @@ impl<'a> ReqCreateAudience<'a> {
             advertiser_id,
             targeting_name,
             targeting_description,
-            targeting_type: "TARGET_TYPE_NOT_APP",
+            targeting_type: "TARGET_TYPE_APP",
             current_custom_location_struct,
             not_installed_apps_struct: CustomLocation { value: vec![String::from("true")] },
             ai_target_flag: "AI_TARGET_DISABLE"
@@ -174,5 +193,27 @@ pub struct ReqQueryPositionPriceFilter {
 pub struct ReqQueryPositionPrice {
     pub advertiser_id: String,
     pub filtering: ReqQueryPositionPriceFilter
+}
+
+
+
+
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateAdgroup {
+    pub advertiser_id: String,
+    pub adgroup_name: String,
+    pub campaign_id: String,
+    pub targeting_package_id: i64,
+    pub targeting_package_scope: String, //SHARE
+    pub product_id: String,
+    pub adgroup_begin_date: String,
+    pub adgroup_end_date: Option<String>,
+    pub time_period_type: String, //TIME_PERIOD_ALL, TIME_PERIOD_DAY_SPECIFIC
+    pub time_period: Option<String>,
+    pub price_type: String,
+    pub price: f32,
+    pub creative_size_id: String
 }
 

@@ -1486,6 +1486,7 @@ impl GameService {
         let tasks = game_repository::get_uncollection_tasks(pool).await;
         if let Some(tasks) = tasks {
             if tasks.is_empty() {
+                println!("tasks empty");
                 return;
             }
             if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {

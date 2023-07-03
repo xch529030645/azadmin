@@ -13,7 +13,7 @@ use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
 use std::{time::Duration, fs};
 use ctrl::game_controller;
 
-use crate::{ctrl::{game_service::GameService, promotion_service::PromotionService, promotion_controller}, model::MysqlConfig};
+use crate::{ctrl::{game_service::GameService, promotion_service::PromotionService, promotion_controller}, model::MysqlConfig, lib::server_api};
 
 
 #[get("/azadmin/test")]
@@ -51,6 +51,9 @@ async fn main() -> std::io::Result<()> {
     .max_connections(30)
     .connect(&get_mysql_connect_url(&server_config))
     .await.unwrap_or_else(|_| { std::process::exit(0) });
+
+    println!("start mysql");
+
 
     if server_config.profiles.eq("prod") {
         println!("prod");

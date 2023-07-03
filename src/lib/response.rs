@@ -312,3 +312,29 @@ pub struct ResFloorPrice {
     pub message: Option<String>,
     pub data: ResFloorPriceData
 }
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateProductData {
+    pub product_id: String
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateProduct {
+    pub code: String,
+    pub message: Option<String>,
+    pub data: ResCreateProductData
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateAdgroupData {
+    pub adgroup_id: String
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateAdgroup {
+    pub code: String,
+    pub data: ResCreateAdgroupData
+}

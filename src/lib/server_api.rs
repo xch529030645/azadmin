@@ -1,8 +1,11 @@
 use std::{collections::HashMap, fs, str::FromStr, borrow::Cow};
 
+use chrono::Local;
 use reqwest::header::HeaderMap;
 use serde::{Serialize, de};
 use serde_json::{from_str, Value};
+use sqlx::ColumnIndex;
+use uuid::Uuid;
 
 use crate::model::*;
 
@@ -249,21 +252,118 @@ pub async fn query_package_app_id(client_id: &String, access_token: &String, pac
 }
 
 
-pub async fn create_campaign(access_token: &str, advertiser_id: &str, campaign_name: &str, daily_budget: i32, sync_flow_resource_searchad: &str) -> Option<ResCreateCampaign> {
+pub async fn create_campaign(access_token: &str, advertiser_id: &str, campaign_name: &str, daily_budget: i32) -> Option<ResCampaign> {
+    println!("start create_campaign for {}", advertiser_id);
     let data = ReqCreateCampaign {
         advertiser_id: advertiser_id.to_string(), 
         campaign_name: campaign_name.to_string(), 
         product_type: "ANDROID_APP".to_string(),
-        daily_budget, 
-        sync_flow_resource_searchad: sync_flow_resource_searchad.to_string()
+        daily_budget
     };
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/create", "POST", access_token, &data).await;
     match rs {
         Some(txt) => {
-            let rs = serde_json::from_str(txt.as_str());
+            let rs: Result<ResCreateCampaign, serde_json::Error> = serde_json::from_str(txt.as_str());
             match rs {
-                Ok(v) => Some(v),
-                Err(e) => None
+                Ok(v) => {
+                    if v.code == "200" {
+                        println!("create_campaign success: {}", &v.data.campaign_id);
+                        Some(v.data)
+                    } else {
+                        println!("create_campaign failed: {:?}", &v.message);
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("create_campaign failed: {} {}", e, &txt);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn create_adgroup(access_token: &str, campaign_id: &String, product_id: &String, ready_ad: &ReqReadyAd) -> Option<ResCreateAdgroupData> {
+    println!("start create_adgroup: {} {}", campaign_id, product_id);
+    let mut adgroup_begin_date: String;
+    let mut adgroup_end_date: Option<String> = None;
+    if ready_ad.promotion_date.is_empty() {
+        adgroup_begin_date = Local::now().format("%Y-%m-%d").to_string();
+    } else {
+        adgroup_begin_date = ready_ad.promotion_date.first().unwrap().clone();
+        adgroup_end_date = match ready_ad.promotion_date.get(1) {
+            Some(v) => Some(v.clone()),
+            None => None
+        }
+    }
+    let data = ReqCreateAdgroup {
+        advertiser_id: ready_ad.advertiser_id.clone(),
+        adgroup_name: ready_ad.ad_name.clone(),
+        campaign_id: campaign_id.clone(),
+        targeting_package_id: ready_ad.audience_package,
+        targeting_package_scope: "SHARE".to_string(),
+        product_id: product_id.to_string(),
+        adgroup_begin_date,
+        adgroup_end_date,
+        time_period_type: ready_ad.time_type.clone(),
+        time_period: None,
+        price_type: ready_ad.bid_type.clone(),
+        price: ready_ad.bid.parse::<f32>().unwrap(),
+        creative_size_id: ready_ad.position.clone()
+    };
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/adgroup/create", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResCreateAdgroup, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code == "200" {
+                        println!("create_adgroup success: {}", &v.data.adgroup_id);
+                        Some(v.data)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("create_adgroup err: {} {}", e, txt);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+pub async fn create_product(access_token: &str, advertiser_id: &String, app_id: &String) -> Option<ResCreateProductData> {
+    println!("start create_product: C{}", app_id);
+    let data = ReqCreateProduct {
+        advertiser_id: advertiser_id.clone(),
+        product_type: "ANDROID_APP".to_string(),
+        ag_app_type: "AG_APP_FOR_DISPLAY_NETWORK".to_string(),
+        product_info: ReqProductInfo {
+            app: ReqProductInfoAppInfo {
+                app_id: format!("C{}", app_id)
+            }
+        }
+    };
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/product/create", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResCreateProduct, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code == "200"{
+                        println!("create_product success");
+                        Some(v.data)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("create_product err: {} {}", e, txt);
+                    None
+                }
             }
         },
         None => None
@@ -585,4 +685,45 @@ pub async fn get(url: &String) -> Option<String> {
     }
 }
 
+
+pub async fn download(url: &str) {
+    let client = reqwest::Client::builder()
+    .tls_built_in_root_certs(true)
+    .danger_accept_invalid_certs(true)
+    .use_rustls_tls()
+    .build().unwrap();
+    let mut headers = HeaderMap::new();
+    headers.insert("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7".parse().unwrap());
+    headers.insert("Accept-Language", "zh-CN,zh;q=0.9".parse().unwrap());
+    headers.insert("Cache-Control", "no-cache".parse().unwrap());
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    headers.insert("Pragma", "no-cache".parse().unwrap());
+    headers.insert("Sec-Fetch-Dest", "document".parse().unwrap());
+    headers.insert("Sec-Fetch-Mode", "navigate".parse().unwrap());
+    headers.insert("Sec-Fetch-Site", "none".parse().unwrap());
+    headers.insert("Sec-Fetch-User", "?1".parse().unwrap());
+    headers.insert("Upgrade-Insecure-Requests", "1".parse().unwrap());
+    headers.insert("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("sec-ch-ua", "\"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"114\", \"Google Chrome\";v=\"114\"".parse().unwrap());
+    headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
+    headers.insert("sec-ch-ua-platform", "\"macOS\"".parse().unwrap());
+    
+    let rs = client.get(url).headers(headers).send().await;
+    match rs {
+        Ok(v) => {
+            println!("ok");
+            let bytes = v.bytes().await;
+            if let Ok(bytes) = bytes {
+                let uuid = Uuid::new_v4();
+                let suffix = url.split(".").last().unwrap();
+                let tmpfile = format!("tmp/{}.{}", uuid.to_string(), suffix);
+                fs::write(tmpfile, bytes);
+            }
+        },
+        Err(e) => {
+            println!("download err: {:?}: {}", e.status(), e);
+            // None
+        }
+    }
+}
 
