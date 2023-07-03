@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {
                     game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
                     game_controller::query_umeng_duration(&pool, &game_service).await;
 
-                    promotion_controller::fetch_assets(&pool, &promotion_service).await;
+                    // promotion_controller::fetch_assets(&pool, &promotion_service).await;
                 }
                 game_controller::check_package_app_id(&pool, &game_service).await
             }
