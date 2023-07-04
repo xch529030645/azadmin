@@ -253,7 +253,8 @@ pub struct ResQueryAssets {
     pub video_play_duration: Option<i32>,
     pub file_size: i32,
     pub file_format: String,
-    pub file_hash_sha256: String
+    pub file_hash_sha256: String,
+    pub cover_url: Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
@@ -337,4 +338,17 @@ pub struct ResCreateAdgroupData {
 pub struct ResCreateAdgroup {
     pub code: String,
     pub data: ResCreateAdgroupData
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateCreativeData {
+    pub creative_id: i64
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ResCreateCreative {
+    pub code: String,
+    pub message: Option<String>,
+    pub data: ResCreateCreativeData
 }

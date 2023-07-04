@@ -217,3 +217,37 @@ pub struct ReqCreateAdgroup {
     pub creative_size_id: String
 }
 
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqFileStruct {
+    pub asset_id: i64
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqAssetsStruct {
+    pub file: ReqFileStruct
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqTitleStruct {
+    pub text: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqContentStruct {
+    pub images: Option<Vec<ReqAssetsStruct>>,
+    pub icon: Option<ReqAssetsStruct>,
+    pub video: Option<ReqAssetsStruct>,
+    pub title: Option<ReqTitleStruct>
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqCreateCreative {
+    pub advertiser_id: String,
+    pub adgroup_id: String,
+    pub creative_name: String,
+    pub creative_size_sub_type: String,
+    pub creative_size: String,
+    pub content_struct: ReqContentStruct
+}

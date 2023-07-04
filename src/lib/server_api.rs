@@ -335,6 +335,84 @@ pub async fn create_adgroup(access_token: &str, campaign_id: &String, product_id
     }
 }
 
+
+pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup_id: &String, creative_name: &String, creative_size_sub_type: &String, creative_size: &String, title: &String, images: Vec<i64>, icon: Option<i64>, video: Option<i64>) -> Option<i64> {
+    let imagesStruct = if !images.is_empty() {
+        let mut list: Vec<ReqAssetsStruct> = vec![];
+        for imid in images {
+            list.push(ReqAssetsStruct {
+                file: ReqFileStruct {
+                    asset_id: imid
+                }
+            })
+        }
+        Some(list)
+    } else {
+        None
+    };
+
+    let iconStruct = if let Some(iconId) = icon {
+        Some(ReqAssetsStruct {
+            file: ReqFileStruct {
+                asset_id: iconId
+            }
+        })
+    } else {
+        None
+    };
+
+    let videoStruct = if let Some(videoId) = video {
+        Some(ReqAssetsStruct {
+            file: ReqFileStruct {
+                asset_id: videoId
+            }
+        })
+    } else {
+        None
+    };
+    
+
+    let req = ReqCreateCreative {
+        advertiser_id: advertiser_id.clone(),
+        adgroup_id: adgroup_id.clone(),
+        creative_name: creative_name.clone(),
+        creative_size_sub_type: creative_size_sub_type.clone(),
+        creative_size: creative_size.clone(),
+        content_struct: ReqContentStruct {
+            images: imagesStruct,
+            icon: iconStruct,
+            video: videoStruct,
+            title: Some(
+                ReqTitleStruct {
+                    text: title.clone()
+                }
+            )
+        }
+    };
+
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/creative/create", "POST", access_token, &data).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<ResCreateCreative, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    if v.code == "200"{
+                        println!("create_creative success");
+                        Some(v.data.creative_id)
+                    } else {
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("create_creative err: {} {}", e, txt);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
 pub async fn create_product(access_token: &str, advertiser_id: &String, app_id: &String) -> Option<ResCreateProductData> {
     println!("start create_product: C{}", app_id);
     let data = ReqCreateProduct {
@@ -680,6 +758,26 @@ pub async fn get(url: &String) -> Option<String> {
         },
         Err(e) => {
             println!("get err: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn send_download(aid: i32) -> Option<String> {
+    let client: reqwest::Client = reqwest::Client::new();
+    let rs = client.get(format!("http://127.0.0.1:8000/assets/qunhui/download?asset_id={}", aid)).send().await;
+    match rs {
+        Ok(v) => {
+            let txt = v.text().await.unwrap();
+            let res: ResDownloadResult = serde_json::from_str(&txt).unwrap();
+            if res.err == 0 {
+                Some(res.path)
+            } else {
+                None
+            }
+        },
+        Err(e) => {
+            println!("send_download err: {}", e);
             None
         }
     }

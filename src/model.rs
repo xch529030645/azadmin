@@ -451,7 +451,8 @@ pub struct Assets {
     pub video_play_duration: Option<i32>,
     pub file_size: Option<i32>,
     pub file_format: Option<String>,
-    pub local_path: Option<String>
+    pub local_path: Option<String>,
+    pub cover_url: Option<String>,
 }
 
 
@@ -550,6 +551,24 @@ pub struct ReqCreateAds {
     pub request_id: String,
     pub ad_list: Vec<ReqReadyAd>
 }
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqSearchAssets {
+    pub search_text: Option<String>,
+    pub format: Option<String>,
+    pub size: Option<String>,
+    pub page: i32,
+    pub len: i32
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ResDownloadResult {
+    pub err: i32,
+    pub path: Option<String>,
+}
+
 
 
 #[derive(Deserialize, Serialize)]

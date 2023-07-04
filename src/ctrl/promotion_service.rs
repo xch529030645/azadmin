@@ -2,6 +2,7 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, fs::{
 use chrono::{Local, DateTime, Days};
 use serde_json::Value;
 use sqlx::{Pool, MySql, Row};
+use ssh_rs::new;
 
 use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData, ctrl::promotion_service};
 
@@ -295,28 +296,28 @@ impl PromotionService {
     }
 
 
-    pub async fn upload_file(&self, pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<String> {
+    pub async fn upload_file(&self, pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<i64> {
         let mut ret = None;
-        let file_url = game_repository::get_assets_url(pool, aid).await;
-        if let Some(file_url) = file_url {
-            let names: Vec<&str> = file_url.split("/").collect();
-            let name = names.last().unwrap().to_string();
-            let tmp_path = "./tmp/".to_string() + name.as_str();
-            let rs = self.download(&file_url, &tmp_path).await;
-            if rs.is_ok() {
-                let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
-                let rs =server_api::upload_file(&access_token, advertiser_id, &tmp_path, &name).await;
-                if let Some(data) = rs {
-                    let mut filtering = HashMap::new();
-                    filtering.insert("asset_id".to_string(), data.asset_id.clone());
-                    let rs = server_api::query_assets(&access_token, advertiser_id, Some(filtering), 1).await;
-                    if let Some(rs) = rs {
-                        Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
-                    }
-                    ret = Some(data.asset_id);
+        let rs = server_api::send_download(aid).await;
+        if let Some(tmp_path) = rs {
+            let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
+            let filename = game_repository::get_assets_name(pool, aid).await;
+            let rs =server_api::upload_file(&access_token, advertiser_id, &tmp_path, &filename).await;
+            if let Some(data) = rs {
+                game_repository::save_assets_advertiser(pool, &data.asset_id, aid, advertiser_id).await;
+                // let mut filtering = HashMap::new();
+                // filtering.insert("asset_id".to_string(), data.asset_id.clone());
+                // let rs = server_api::query_assets(&access_token, advertiser_id, Some(filtering), 1).await;
+                // if let Some(rs) = rs {
+                //     Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
+                // }
+                let v = data.asset_id.parse::<i64>();
+                ret = match v {
+                    Ok(v) => Some(v),
+                    Err(_) => None
                 }
-                std::fs::remove_file(tmp_path);
             }
+            std::fs::remove_file(tmp_path);
         }
         ret
     }
@@ -407,18 +408,79 @@ impl PromotionService {
                 if let Some(inv) = icons.first() {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     if asset_id.is_none() {
-                        let url = game_repository::get_assets_url(pool, inv.id).await;
-                        if let Some(url) = url {
-                            
-                        }
+                        icon_asset_id = self.upload_file(pool, inv.id, &param.advertiser_id).await
                     } else {
                         icon_asset_id = asset_id;
                     }
                 }
-                
             }
+
+            let mut video_id: Option<i64> = None;
+            if let Some(icons) = &creative.videos {
+                if let Some(inv) = icons.first() {
+                    let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
+                    if asset_id.is_none() {
+                        video_id = self.upload_file(pool, inv.id, &param.advertiser_id).await
+                    } else {
+                        video_id = asset_id;
+                    }
+                }
+            }
+
+            let mut image_ids: Vec<i64> = vec![];
+            if let Some(images) = &creative.images {
+                for inv in images {
+                    let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
+                    let id = if asset_id.is_none() {
+                        self.upload_file(pool, inv.id, &param.advertiser_id).await
+                    } else {
+                        asset_id
+                    };
+                    if let Some(id) = id {
+                        image_ids.push(id)
+                    }
+                }
+            }
+
+            server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id).await;
         }
         None
+    }
+
+
+    pub async fn search_assets(&self, pool: &Pool<MySql>, param: &ReqSearchAssets) -> Option<Vec<Assets>> {
+        let mut sql = "SELECT *, NULL as asset_id FROM assets".to_string();
+
+        let mut conds: Vec<String> = vec![];
+        conds.push(String::from("NOT ISNULL(local_path)"));
+        if let Some(search_text) = &param.search_text {
+            conds.push(format!("assets_name LIKE '%{}%'", search_text));
+        }
+        if let Some(format) = &param.format {
+            conds.push(format!("FIND_IN_SET(file_format,'{}')", format));
+        }
+        if let Some(size) = &param.size {
+            let mut orConds: Vec<String> = vec![];
+            let sizes: Vec<&str> = size.split(",").collect();
+            for s in sizes {
+                let wh: Vec<&str> = s.split("x").collect();
+                orConds.push(format!("width={} AND height={}", wh[0], wh[1]));
+            }
+            conds.push(format!("({})", orConds.join(" OR ")))
+        }
+
+        sql += format!(" WHERE {} LIMIT {}, {}", conds.join(" AND "), param.page * param.len, param.len).as_str();
+
+        let rs = sqlx::query_as::<_, Assets>(sql.as_str())
+            .fetch_all(pool).await;
+        match rs {
+            Ok(v) => Some(v),
+            Err(e) => {
+                println!("search_assets err {}", e);
+                None
+            }
+        }
+
     }
     
 }
