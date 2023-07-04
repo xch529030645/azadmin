@@ -1054,6 +1054,14 @@ pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQuery
         .execute(pool).await;
 }
 
+pub async fn save_assets_advertiser(pool: &Pool<MySql>, asset_id: &String, aid: i32, advertiser_id: &String) {
+    sqlx::query("INSERT INTO assets_advertiser (assets_id, aid, advertiser_id) SELECT ?,?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM assets_advertiser WHERE assets_id=?)")
+        .bind(asset_id)
+        .bind(aid)
+        .bind(advertiser_id)
+        .execute(pool).await;
+}
+
 pub async fn update_position_detail(pool: &Pool<MySql>, creative_size_id: &String, txt: &str) {
     let rs = sqlx::query("UPDATE positions SET detail=? WHERE creative_size_id=?")
         .bind(txt)
@@ -1100,7 +1108,7 @@ pub async fn get_assets_url(pool: &Pool<MySql>, aid: i32) -> Option<String> {
 }
 
 pub async fn query_assets(pool: &Pool<MySql>, req: &FormQueryAssets) -> Option<Vec<Assets>> {
-    let rs = sqlx::query_as::<_, Assets>("SELECT * FROM assets WHERE asset_type = ? AND width = ? AND height = ?")
+    let rs = sqlx::query_as::<_, Assets>("SELECT * FROM assets WHERE asset_type = ? AND width = ? AND height = ? AND NOT ISNULL(local_path)")
         .bind(&req.asset_type)
         .bind(req.width)
         .bind(req.height)
@@ -1336,6 +1344,23 @@ pub async fn get_asset_id(pool: &Pool<MySql>, aid: i32, advertiser_id: &String) 
         Err(e) => {
             println!("get_asset_id: {}", e);
             None
+        }
+    }
+}
+
+pub async fn get_assets_name(pool: &Pool<MySql>, aid: i32) -> String {
+    let rs = sqlx::query("SELECT assets_name FROM assets WHERE id=?")
+        .bind(aid)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let rs: Option<&str> = v.get(0);
+            rs.unwrap().to_string()
+        },
+        Err(e) => {
+            println!("get_asset_id: {}", e);
+            "".to_string()
         }
     }
 }

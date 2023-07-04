@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
                 task_interval_1 = task_interval_1 - 1;
                 if task_interval_1 == 0 {
                     task_interval_1 = 5;
-                    game_controller::restart_mysql(&pool).await;
+                    // game_controller::restart_mysql(&pool).await;
                     game_controller::check_access_token(&pool, &game_service).await;
                     game_controller::query_reports(&pool, &game_service).await;
                     game_controller::query_ads_reports(&pool, &game_service).await;
@@ -150,6 +150,7 @@ async fn main() -> std::io::Result<()> {
             .service(promotion_controller::get_collection_operations)
             .service(promotion_controller::query_position_price)
             .service(promotion_controller::create_ads)
+            .service(promotion_controller::search_assets)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?

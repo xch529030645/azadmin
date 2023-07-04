@@ -92,3 +92,9 @@ pub async fn create_ads(_: UserData, data: web::Data<AppState>, promotion_servic
     let rs = promotion_service.create_ads(&data.pool, &param.0).await;
     return Results::err(rs);
 }
+
+#[post("/azadmin/search_assets")]
+pub async fn search_assets(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqSearchAssets>) -> impl Responder {
+    let rs = promotion_service.search_assets(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
