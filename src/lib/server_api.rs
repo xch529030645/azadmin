@@ -372,7 +372,7 @@ pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup
     };
     
 
-    let req = ReqCreateCreative {
+    let data = ReqCreateCreative {
         advertiser_id: advertiser_id.clone(),
         adgroup_id: adgroup_id.clone(),
         creative_name: creative_name.clone(),
@@ -771,7 +771,7 @@ pub async fn send_download(aid: i32) -> Option<String> {
             let txt = v.text().await.unwrap();
             let res: ResDownloadResult = serde_json::from_str(&txt).unwrap();
             if res.err == 0 {
-                Some(res.path)
+                res.path
             } else {
                 None
             }
