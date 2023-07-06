@@ -153,11 +153,18 @@ impl<'a> ReqCreateAudience<'a> {
     }
 }
 
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqQueryAudienceFiltering {
+    pub targeting_type: String
+}
+
 #[derive(Serialize,Deserialize)]
 pub struct ReqQueryAudience {
     pub advertiser_id: String,
     pub page: i32,
     pub page_size: i32,
+    pub filtering: ReqQueryAudienceFiltering
 }
 
 

@@ -495,7 +495,10 @@ pub async fn query_audience_package(access_token: &str, advertiser_id: &String, 
     let data = ReqQueryAudience {
         advertiser_id: advertiser_id.clone(),
         page,
-        page_size: 50
+        page_size: 50,
+        filtering: ReqQueryAudienceFiltering {
+            targeting_type: "TARGET_TYPE_APP".to_string()
+        }
     };
 
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/tools/targeting_package/query", "GET", access_token, &data).await;
