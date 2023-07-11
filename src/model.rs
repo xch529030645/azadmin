@@ -498,6 +498,22 @@ pub struct FormUpdateCollectionAdvertisers {
     pub advertisers: String
 }
 
+#[derive(Serialize,Deserialize)]
+pub struct ReqSaveCollection {
+    pub id: Option<i32>,
+    pub min_cost: Option<f64>,
+    pub check_hour: Option<i32>,
+    pub check_minute: Option<i32>,
+    pub operation: i32,
+    pub remark: Option<String>,
+    pub require_roas: Option<f64>,
+    pub advertisers: Option<String>
+}
+
+
+
+
+
 
 #[derive(Serialize,Deserialize)]
 pub struct ReqWebQueryPositionPrice {
