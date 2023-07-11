@@ -98,3 +98,9 @@ pub async fn search_assets(_: UserData, data: web::Data<AppState>, promotion_ser
     let rs = promotion_service.search_assets(&data.pool, &param.0).await;
     return Results::done(&rs.as_ref());
 }
+
+#[post("/azadmin/add_collection")]
+pub async fn add_collection(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqSaveCollection>) -> impl Responder {
+    let err = promotion_service.add_collection(&data.pool, &param.0).await;
+    return Results::err(err);
+}
