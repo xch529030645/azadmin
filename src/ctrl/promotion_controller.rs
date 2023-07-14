@@ -104,3 +104,9 @@ pub async fn add_collection(_: UserData, data: web::Data<AppState>, promotion_se
     let err = promotion_service.add_collection(&data.pool, &param.0).await;
     return Results::err(err);
 }
+
+#[post("/azadmin/del_collection")]
+pub async fn del_collection(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqDelCollection>) -> impl Responder {
+    let err = promotion_service.del_collection(&data.pool, &param.0).await;
+    return Results::err(err);
+}

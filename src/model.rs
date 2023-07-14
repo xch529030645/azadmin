@@ -510,8 +510,10 @@ pub struct ReqSaveCollection {
     pub advertisers: Option<String>
 }
 
-
-
+#[derive(Serialize,Deserialize)]
+pub struct ReqDelCollection {
+    pub id: i32
+}
 
 
 
