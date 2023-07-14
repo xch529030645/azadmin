@@ -152,6 +152,7 @@ async fn main() -> std::io::Result<()> {
             .service(promotion_controller::create_ads)
             .service(promotion_controller::search_assets)
             .service(promotion_controller::add_collection)
+            .service(promotion_controller::del_collection)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?

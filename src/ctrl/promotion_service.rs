@@ -519,5 +519,18 @@ impl PromotionService {
             }
         }
     }
+
+    pub async fn del_collection(&self, pool: &Pool<MySql>, params: &ReqDelCollection) -> i32 {
+        let rs = sqlx::query("DELETE FROM collection_tasks WHERE id=?")
+            .bind(params.id)
+            .execute(pool).await;
+        match rs {
+            Ok(v) => 0,
+            Err(e) => {
+                println!("del_collection err: {}", e);
+                1
+            }
+        }
+    }
     
 }
