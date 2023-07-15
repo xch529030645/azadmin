@@ -251,15 +251,16 @@ impl GameService {
         let conds = self.get_report_query_conds(params);
         let list = self.query_release_reports(pool, params, &conds).await;
 
-        let table = if let Some(advertisers) = &params.advertisers {
-            if advertisers.is_empty() {
-                "ads_daily_release_reports"
-            } else {
-                "ads_advertiser_daily_release_reports"
-            }
-        } else {
-            "ads_daily_release_reports"
-        };
+        // let table = if let Some(advertisers) = &params.advertisers {
+        //     if advertisers.is_empty() {
+        //         "ads_daily_release_reports"
+        //     } else {
+        //         "ads_advertiser_daily_release_reports"
+        //     }
+        // } else {
+        //     "ads_daily_release_reports"
+        // };
+        let table = "ads_advertiser_daily_release_reports";
         
         let mut sql = format!("SELECT COUNT(*) AS `count` FROM {} a", table);
         if !conds.is_empty() {

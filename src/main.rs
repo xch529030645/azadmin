@@ -9,7 +9,7 @@ use actix_cors::Cors;
 use actix_rt::time;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use model::ServerConfig;
-use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
+use sqlx::{Pool, MySql, mysql::MySqlPoolOptions, Executor};
 use std::{time::Duration, fs};
 use ctrl::game_controller;
 
@@ -48,6 +48,10 @@ async fn main() -> std::io::Result<()> {
 
 
     let pool = MySqlPoolOptions::new()
+    .after_connect(|conn, _meta| Box::pin(async move {
+        conn.execute("set time_zone = '+8:00';").await;
+        Ok(())
+    }))
     .max_connections(30)
     .connect(&get_mysql_connect_url(&server_config))
     .await.unwrap_or_else(|_| { std::process::exit(0) });
