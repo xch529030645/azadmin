@@ -157,7 +157,7 @@ impl GameService {
     }
 
     async fn query_release_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports, conds: &Vec<String>) -> Option<Vec<ResAdsReports>>{
-        let table = if let Some(advertisers) = &params.advertisers {
+        let mut table = if let Some(advertisers) = &params.advertisers {
             if advertisers.is_empty() {
                 "ads_daily_release_reports"
             } else {
@@ -166,6 +166,7 @@ impl GameService {
         } else {
             "ads_daily_release_reports"
         };
+        table = "ads_advertiser_daily_release_reports";
         let left_join_cond = if table.eq("ads_daily_release_reports") {
             ""
         } else {
