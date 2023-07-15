@@ -239,10 +239,14 @@ pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
     // println!("query_reports");
     let s = game_service.clone();
     let p = pool.clone();
-    actix_rt::spawn(async move {
-        s.query_reports(&p, &Local::now(), &Local::now()).await;
-        s.check_collection_tasks(&p).await;
-    });
+    // actix_rt::spawn(async move {
+    //     s.query_reports(&p, &Local::now(), &Local::now()).await;
+    //     s.check_collection_tasks(&p).await;
+    // });
+
+    self.query_reports(&p, &Local::now(), &Local::now()).await;
+    self.check_collection_tasks(&p).await;
+
     // game_service.query_reports(&pool, &Local::now(), &Local::now()).await;
 }
 
