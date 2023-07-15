@@ -288,7 +288,7 @@ impl GameService {
 
     pub async fn get_overview(&self, pool: &Pool<MySql>, params: &ReqQueryOverview) -> Option<Vec<ResOverview>> {
         let rs = sqlx::query_as::<_, ResOverview>("SELECT a.cost, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, b.earnings FROM (
-            SELECT SUM(cost) as cost, stat_datetime FROM ads_daily_release_reports 
+            SELECT SUM(cost) as cost, stat_datetime FROM ads_advertiser_daily_release_reports 
             WHERE record_datetime = stat_datetime and stat_datetime BETWEEN ? AND ? AND country ='ALL' group by stat_datetime
             ) a 
             LEFT JOIN 
@@ -317,7 +317,7 @@ impl GameService {
 
         let conds = self.get_report_query_conds(params);
 
-        let table = if let Some(advertisers) = &params.advertisers {
+        let mut table = if let Some(advertisers) = &params.advertisers {
             if advertisers.is_empty() {
                 "ads_daily_release_reports"
             } else {
@@ -326,11 +326,14 @@ impl GameService {
         } else {
             "ads_daily_release_reports"
         };
+
         let left_join_cond = if table.eq("ads_daily_release_reports") {
             ""
         } else {
             "AND a.advertiser_id=d.advertiser_id"
         };
+
+        table = "ads_advertiser_daily_release_reports";
 
         
         let mut sql = format!("SELECT SUM(a.cost) as cost, CAST(SUM(a.active) as SIGNED) as active, SUM(a.iaa) as iaa, SUM(c.earnings) as earnings, SUM(d.iaa) as first_day_iaa 
@@ -797,7 +800,7 @@ impl GameService {
                 //     }
                 // }
                 for date in days {
-                    self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
+                    // self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
                     self.calc_advertiser_release_daily_reports(&pool, &date, &end_date).await;
                 }
 
