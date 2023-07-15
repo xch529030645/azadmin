@@ -591,7 +591,26 @@ pub async fn query_position_detail(access_token: &String, advertiser_id: &String
     }
 }
 
-pub async fn upload_file(access_token: &String, advertiser_id: &String, file_path: &String, file_name: &String) -> Option<ResUploadAssetsData> {
+pub async fn upload_file(access_token: &String, advertiser_id: &String, aid: i32) -> Option<i64> {
+    let client: reqwest::Client = reqwest::Client::new();
+    let rs = client.get(format!("http://127.0.0.1:10003/assets/inv/upload_assets?access_token={}&advertiser_id={}&aid={}", access_token, advertiser_id, aid)).send().await;
+    match rs {
+        Ok(v) => {
+            let txt = v.text().await.unwrap();
+            let res: ResUploadAssetsData = serde_json::from_str(&txt).unwrap();
+            if res.err == 0 {
+                res.data
+            } else {
+                None
+            }
+        },
+        Err(e) => {
+            println!("upload_file err: {}", e);
+            None
+        }
+    }
+    
+    /*
     let file_token = get_upload_token(access_token, advertiser_id).await;
     if let Some(file_token) = file_token {
         let mut headers = HeaderMap::new();
@@ -602,7 +621,8 @@ pub async fn upload_file(access_token: &String, advertiser_id: &String, file_pat
         let part= reqwest::multipart::Part::bytes(Cow::from(file_byte)).file_name(file_name.clone());
         let file_token_part = reqwest::multipart::Part::text(file_token);
         let asset_name_part = reqwest::multipart::Part::text(file_name.clone());
-        let form = reqwest::multipart::Form::new().part("file", part)
+        let form = reqwest::multipart::Form::new()
+            .part("file", part)
             .part("file_token", file_token_part)
             .part("asset_name", asset_name_part);
         let rs = reqwest::Client::new()
@@ -639,6 +659,7 @@ pub async fn upload_file(access_token: &String, advertiser_id: &String, file_pat
         println!("get file_token failed");
         None
     }
+     */
 }
 
 pub async fn get_upload_token(access_token: &String, advertiser_id: &String) -> Option<String> {

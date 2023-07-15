@@ -297,29 +297,32 @@ impl PromotionService {
 
 
     pub async fn upload_file(&self, pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<i64> {
-        let mut ret = None;
-        let rs = server_api::send_download(aid).await;
-        if let Some(tmp_path) = rs {
-            let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
-            let filename = game_repository::get_assets_name(pool, aid).await;
-            let rs =server_api::upload_file(&access_token, advertiser_id, &tmp_path, &filename).await;
-            if let Some(data) = rs {
-                game_repository::save_assets_advertiser(pool, &data.asset_id, aid, advertiser_id).await;
-                // let mut filtering = HashMap::new();
-                // filtering.insert("asset_id".to_string(), data.asset_id.clone());
-                // let rs = server_api::query_assets(&access_token, advertiser_id, Some(filtering), 1).await;
-                // if let Some(rs) = rs {
-                //     Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
-                // }
-                let v = data.asset_id.parse::<i64>();
-                ret = match v {
-                    Ok(v) => Some(v),
-                    Err(_) => None
-                }
-            }
-            std::fs::remove_file(tmp_path);
-        }
-        ret
+        let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
+        server_api::upload_file(&access_token, advertiser_id, aid).await
+
+        // let mut ret = None;
+        // let rs = server_api::send_download(aid).await;
+        // if let Some(tmp_path) = rs {
+        //     let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
+        //     let filename = game_repository::get_assets_name(pool, aid).await;
+        //     let rs =server_api::upload_file(&access_token, advertiser_id, &tmp_path, &filename).await;
+        //     if let Some(data) = rs {
+        //         game_repository::save_assets_advertiser(pool, &data.asset_id, aid, advertiser_id).await;
+        //         // let mut filtering = HashMap::new();
+        //         // filtering.insert("asset_id".to_string(), data.asset_id.clone());
+        //         // let rs = server_api::query_assets(&access_token, advertiser_id, Some(filtering), 1).await;
+        //         // if let Some(rs) = rs {
+        //         //     Self::save_assets_for_adv(pool, advertiser_id, &rs.creative_asset_infos).await;
+        //         // }
+        //         let v = data.asset_id.parse::<i64>();
+        //         ret = match v {
+        //             Ok(v) => Some(v),
+        //             Err(_) => None
+        //         }
+        //     }
+        //     std::fs::remove_file(tmp_path);
+        // }
+        // ret
     }
 
     pub async fn download(&self, file_url: &String, tmp_path: &String) -> std::result::Result<(), Box<dyn std::error::Error>> {

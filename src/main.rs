@@ -38,7 +38,7 @@ pub struct AppState {
 
 fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
     return format!("mysql://{}:{}@{}:{}/azadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useOldAliasMetadataBehavior=true",
-                "root",server_config.password,server_config.host,"3306");
+                "root",server_config.password,server_config.host,server_config.port);
 }
 
 #[actix_web::main]
