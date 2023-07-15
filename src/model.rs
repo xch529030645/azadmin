@@ -11,6 +11,7 @@ use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 pub struct ServerConfig {
     pub password: String,
     pub host: String,
+    pub port: i32,
     pub profiles: String,
 }
 

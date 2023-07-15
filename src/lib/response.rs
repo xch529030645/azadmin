@@ -291,8 +291,8 @@ pub struct ResCustom {
 
 #[derive(Deserialize, Serialize)]
 pub struct ResUploadAssetsData {
-    pub url: String,
-    pub asset_id: String
+    pub err: i32,
+    pub data: Option<i64>
 }
 
 #[derive(Deserialize, Serialize)]
