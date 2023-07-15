@@ -244,8 +244,8 @@ pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
     //     s.check_collection_tasks(&p).await;
     // });
 
-    self.query_reports(&p, &Local::now(), &Local::now()).await;
-    self.check_collection_tasks(&p).await;
+    game_service.query_reports(&p, &Local::now(), &Local::now()).await;
+    game_service.check_collection_tasks(&p).await;
 
     // game_service.query_reports(&pool, &Local::now(), &Local::now()).await;
 }
