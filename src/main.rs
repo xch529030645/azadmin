@@ -9,7 +9,7 @@ use actix_cors::Cors;
 use actix_rt::time;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use model::ServerConfig;
-use sqlx::{Pool, MySql, mysql::MySqlPoolOptions};
+use sqlx::{Pool, MySql, mysql::MySqlPoolOptions, Executor};
 use std::{time::Duration, fs};
 use ctrl::game_controller;
 
