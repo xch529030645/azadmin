@@ -213,7 +213,7 @@ impl GameService {
                     "cost" => "t.cost",
                     "active" => "t.active",
                     "iaa" => "t.iaa",
-                    "earnings" => "t.earnings",
+                    "earnings" => "t2.earnings",
                     _ => "t.cost"
                 }
             },
