@@ -177,14 +177,16 @@ impl GameService {
         } else {
             "b.app_name"
         };
-        let mut sql = format!("SELECT * FROM (SELECT a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(c.earnings) AS earnings, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
+        let mut sql = format!(
+        "
+        SELECT t.*, t2.earnings FROM (SELECT b.app_id, a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
-        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {}
         LEFT JOIN um_apps e ON e.package_name = a.package_name 
         LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
-        LEFT JOIN ads_account g ON b.client_id=g.client_id ", app_name_format, table, table, left_join_cond);
+        LEFT JOIN ads_account g ON b.client_id=g.client_id 
+        ", app_name_format, table, table, left_join_cond);
         
 
         if !conds.is_empty() {
@@ -196,7 +198,7 @@ impl GameService {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
         let mut group_by = [
-            "a.package_name", "b.app_name", "g.remark"
+            "a.package_name", "b.app_name", "g.remark", "b.app_id"
         ].to_vec();
         if params.group_by_country {
             group_by.push("a.country");
@@ -233,7 +235,19 @@ impl GameService {
             }
         };
 
-        sql += format!(") t ORDER BY {} {} LIMIT {}, {}", order_prop, order, params.page * params.len, params.len).as_str();
+
+        let mut earngin_conds = vec![];
+        if let Some(start_date) = &params.start_date {
+            earngin_conds.push(format!("stat_datetime>='{}'", start_date));
+        }
+        if let Some(end_date) = &params.end_date {
+            earngin_conds.push(format!("stat_datetime<='{}'", end_date));
+        }
+
+        sql += format!(") t 
+        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
+        ON t.app_id = t2.app_id
+        ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
         // println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
@@ -337,11 +351,14 @@ impl GameService {
         table = "ads_advertiser_daily_release_reports";
 
         
-        let mut sql = format!("SELECT SUM(a.cost) as cost, CAST(SUM(a.active) as SIGNED) as active, SUM(a.iaa) as iaa, SUM(c.earnings) as earnings, SUM(d.iaa) as first_day_iaa 
+        let mut sql = format!("
+        SELECT * FROM (
+        SELECT SUM(a.cost) as cost, CAST(SUM(a.active) as SIGNED) as active, SUM(a.iaa) as iaa, SUM(c.earnings) as earnings, SUM(d.iaa) as first_day_iaa 
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
-        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {} ",
+        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {} 
+        ",
         table, table, left_join_cond);
         // let mut conds: Vec<String> = vec![];
         // conds.push(format!("(a.record_datetime='{}' OR a.record_datetime='{}')", today, yesterday));
@@ -359,8 +376,21 @@ impl GameService {
         // }
 
         if !conds.is_empty() {
-            sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
+            let mut earngin_conds = vec![];
+            if let Some(start_date) = &params.start_date {
+                earngin_conds.push(format!("stat_datetime>='{}'", start_date));
+            }
+            if let Some(end_date) = &params.end_date {
+                earngin_conds.push(format!("stat_datetime<='{}'", end_date));
+            }
+
+            if let Some(package_name) = &params.package_name {
+                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id WHERE FIND_IN_SET(a.package_name,'{}') AND {} ) t2 ON 1", conds.join(" AND "), package_name, earngin_conds.join(" AND ")).as_str();
+            } else {
+                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id WHERE {} ) t2 ON 1", conds.join(" AND "), earngin_conds.join(" AND ")).as_str();
+            }
         }
+        // println!("{}", &sql);
 
         let rs = sqlx::query_as::<_, ResSumReports>(sql.as_str())
         .fetch_one(pool)
