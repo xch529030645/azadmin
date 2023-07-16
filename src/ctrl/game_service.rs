@@ -182,7 +182,7 @@ impl GameService {
         SELECT t.*, t2.earnings FROM (SELECT b.app_id, a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
-        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {}
+        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {}
         LEFT JOIN um_apps e ON e.package_name = a.package_name 
         LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
         LEFT JOIN ads_account g ON b.client_id=g.client_id 
@@ -357,7 +357,7 @@ impl GameService {
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
-        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country {} 
+        LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {} 
         ",
         table, table, left_join_cond);
         // let mut conds: Vec<String> = vec![];
