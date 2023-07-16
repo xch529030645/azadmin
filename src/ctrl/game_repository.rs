@@ -1148,7 +1148,7 @@ pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<Collection
 pub async fn get_today_campaign_stat(pool: &Pool<MySql>) -> Option<Vec<CampaignStat>> {
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a left join campaign_status b on	a.campaign_id = b.campaign_id WHERE a.stat_datetime =? and a.cost>0.5 and (ISNULL(b.status) or b.status =0) group by a.campaign_id, a.advertiser_id")
+    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a WHERE a.stat_datetime =? and a.cost>0.5 group by a.campaign_id, a.advertiser_id")
         .bind(today)
         .fetch_all(pool)
         .await;
