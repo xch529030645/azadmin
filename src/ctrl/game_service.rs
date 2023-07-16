@@ -1533,7 +1533,7 @@ impl GameService {
                                 if advertisers.contains(&stat.advertiser_id) {
                                     if task.operation == 1 {
                                         let roas = stat.iaa / stat.cost;
-                                        if roas < task.require_roas {
+                                        if roas < task.require_roas && stat.cost >= task.min_cost {
                                             println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
                                             shutdown_ids.push((task, stat));
                                         }
