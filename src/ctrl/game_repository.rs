@@ -294,10 +294,13 @@ pub async fn get_app_roas(pool: &Pool<MySql>, param: &ReqRoas) -> Option<Vec<Ads
         "ALL"
     };
 
-    let sql = format!("SELECT a.package_name, a.cost, a.active, a.iaa, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(a.record_datetime, '%Y-%m-%d') as record_datetime, b.earnings FROM ads_advertiser_daily_release_reports a 
+    let sql = format!("SELECT a.package_name, SUM(a.cost) as cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) as iaa, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(a.record_datetime, '%Y-%m-%d') as record_datetime, b.earnings FROM ads_advertiser_daily_release_reports a 
     LEFT JOIN apps c ON a.package_name = c.package_name 
     LEFT JOIN ads_daily_earnings_reports b ON a.stat_datetime=b.stat_datetime AND b.app_id = c.app_id 
-    WHERE a.package_name=? AND a.country=? AND a.stat_datetime BETWEEN ? AND ?");
+    WHERE a.package_name=? AND a.country=? AND a.stat_datetime BETWEEN ? AND ?
+    GROUP BY a.package_name, a.stat_datetime, a.record_datetime, b.earnings");
+
+    // println!("{}", sql);
 
     // let sql = if let Some(country) = &param.country {
     //     format!("SELECT package_name, cost, active, iaa, DATE_FORMAT(stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(record_datetime, '%Y-%m-%d') as record_datetime FROM ads_daily_release_reports WHERE package_name=? AND country='{}' AND stat_datetime BETWEEN ? AND ?", country)
