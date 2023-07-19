@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs, str::FromStr, borrow::Cow};
 
-use chrono::Local;
+use chrono::{Local, format::Item};
 use reqwest::header::HeaderMap;
 use serde::{Serialize, de};
 use serde_json::{from_str, Value};
@@ -752,6 +752,56 @@ pub async fn query_position_price(access_token: &String, advertiser_id: &String,
     }
 }
 
+
+
+pub async fn query_campaigns(access_token: &String, advertiser_id: &String, page: i32) -> Option<(i64, Vec<Campaign>)> {
+    println!("query_campaigns {} {}", advertiser_id, page);
+    let params = serde_json::json!({
+        "advertiser_id": advertiser_id,
+        "page": page,
+        "page_size": 50
+    });
+
+    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/query", "GET", access_token, &params).await;
+    match rs {
+        Some(txt) => {
+            let rs: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(txt.as_str());
+            match rs {
+                Ok(v) => {
+                    let code = v.get("code")?.as_str()?;
+                    if code.eq("200") {
+                        let data = v.get("data")?;
+                        let total = data.get("total")?.as_i64()?;
+                        let list = data.get("data")?.as_array()?;
+                        let mut ret = vec![];
+                        for item in list {
+                            let vo: Result<Campaign, serde_json::Error> = serde_json::from_value(item.to_owned());
+                            if let Ok(vo) = vo {
+                                ret.push(vo);
+                            }
+                        }
+                        Some((total, ret))
+                    } else {
+                        let msg = v.get("message")?.as_str();
+                        println!("query_campaigns err 2: {:?}", msg);
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("query_campaigns err: {}", &txt);
+                    None
+                }
+            }
+        },
+        None => None
+    }
+}
+
+
+
+
+
+
 async fn curl<T: Serialize + ?Sized>(url: &str, method: &str, access_token: &str, data: &T) -> Option<String> {
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
@@ -847,5 +897,7 @@ pub async fn download(url: &str) {
             // None
         }
     }
+
+    
 }
 

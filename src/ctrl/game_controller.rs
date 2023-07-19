@@ -235,14 +235,15 @@ pub async fn check_access_token(pool: &Pool<MySql>, game_service:&GameService) {
     game_service.check_access_token(pool).await;
 }
 
+pub async fn query_campaigns(pool: &Pool<MySql>, game_service: &GameService) {
+    game_service.query_campaigns(pool).await;
+}
+
 pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
     // println!("query_reports");
     let s = game_service.clone();
     let p = pool.clone();
     actix_rt::spawn(async move {
-        sqlx::query("set time_zone = '+8:00';")
-        .execute(&p);
-
         s.query_reports(&p, &Local::now(), &Local::now()).await;
         s.check_collection_tasks(&p).await;
     });
