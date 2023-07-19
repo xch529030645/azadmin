@@ -1387,7 +1387,7 @@ pub async fn save_campaigns(pool: &Pool<MySql>, campaigns: &[Campaign], advertis
     let mut query = sqlx::query(sql.as_str());
 
     for vo in campaigns {
-        query = query.bind(advertiser_id)
+        query = query
         .bind(&vo.campaign_id)
         .bind(advertiser_id)
         .bind(&vo.campaign_name)

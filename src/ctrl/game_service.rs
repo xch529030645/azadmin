@@ -1634,7 +1634,8 @@ impl GameService {
                             if let Some(token) = &advertiser.access_token {
                                 let rs = server_api::query_campaigns(token, &advertiser.advertiser_id, 1).await;
                                 if let Some(rs) = rs {
-                                    Self::safe_add_query_campaign_task(&tasks, rs.0, &advertiser.advertiser_id);
+                                    let page_count = (rs.0 as f64) / 50.0_f64;
+                                    Self::safe_add_query_campaign_task(&tasks, page_count.ceil() as i64, &advertiser.advertiser_id);
                                     Self::save_campaigns(&mysql, &rs.1, &advertiser.advertiser_id).await;
                                 }
                             } else {
@@ -1700,6 +1701,9 @@ impl GameService {
     }
 
     async fn save_campaigns(pool: &Pool<MySql>, campaigns: &Vec<Campaign>, advertiser_id: &String) {
+        if campaigns.is_empty() {
+            return;
+        }
         game_repository::save_campaigns(pool, campaigns, advertiser_id).await;
     }
     
