@@ -78,7 +78,7 @@ async fn main() -> std::io::Result<()> {
                     task_interval_1 = 5;
                     game_controller::restart_mysql(&pool).await;
                     game_controller::check_access_token(&pool, &game_service).await;
-                    // game_controller::query_campaigns(&pool, &game_service).await;
+                    game_controller::query_campaigns(&pool, &game_service).await;
                     game_controller::query_reports(&pool, &game_service).await;
                     game_controller::query_ads_reports(&pool, &game_service).await;
                     game_controller::query_last_90_day_earning_reports(&pool, &game_service).await;
