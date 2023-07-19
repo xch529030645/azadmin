@@ -467,7 +467,8 @@ pub struct CollectionTask {
     pub check_hour: i32,
     pub check_minute: i32,
     pub operation: i32,
-    pub advertisers: Option<String>
+    pub advertisers: Option<String>,
+    pub operator: i32,
 }
 
 
@@ -508,7 +509,8 @@ pub struct ReqSaveCollection {
     pub operation: i32,
     pub remark: Option<String>,
     pub require_roas: Option<f64>,
-    pub advertisers: Option<String>
+    pub advertisers: Option<String>,
+    pub operator: i32,
 }
 
 #[derive(Serialize,Deserialize)]
@@ -588,6 +590,22 @@ pub struct ResDownloadResult {
     pub path: Option<String>,
 }
 
+
+#[derive(Serialize,Deserialize)]
+pub struct Campaign {
+    pub campaign_id: String,
+    pub campaign_name: String,
+    pub campaign_status: String,
+    pub campaign_daily_budget_status: String,
+    pub user_balance_status: String,
+    pub product_type: String,
+    pub today_daily_budget: i32,
+    pub created_time: String,
+    pub show_status: String,
+    pub campaign_type: Option<String>,
+    pub flow_resource: Option<String>,
+    pub sync_flow_resource_searchad: Option<String>,
+}
 
 
 #[derive(Deserialize, Serialize)]

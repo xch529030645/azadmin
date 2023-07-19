@@ -1151,7 +1151,7 @@ pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<Collection
 pub async fn get_today_campaign_stat(pool: &Pool<MySql>) -> Option<Vec<CampaignStat>> {
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a WHERE a.stat_datetime =? and a.cost>0.5 group by a.campaign_id, a.advertiser_id")
+    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a WHERE a.stat_datetime =? group by a.campaign_id, a.advertiser_id")
         .bind(today)
         .fetch_all(pool)
         .await;
@@ -1367,6 +1367,48 @@ pub async fn get_assets_name(pool: &Pool<MySql>, aid: i32) -> String {
         Err(e) => {
             println!("get_asset_id: {}", e);
             "".to_string()
+        }
+    }
+}
+
+pub async fn save_campaigns(pool: &Pool<MySql>, campaigns: &[Campaign], advertiser_id: &str) {
+    let mut placeholder = vec![];
+    for _ in campaigns {
+        placeholder.push("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    }
+
+    let sql = format!("INSERT INTO azadmin.campaign_list
+    (campaign_id, advertiser_id, campaign_name, campaign_status, campaign_daily_budget_status, user_balance_status, product_type, today_daily_budget, created_time, show_status, campaign_type, sync_flow_resource_searchad)
+    VALUES {} ON DUPLICATE KEY UPDATE campaign_name=VALUES(campaign_name), campaign_status=VALUES(campaign_status), campaign_daily_budget_status=VALUES(campaign_daily_budget_status), user_balance_status=VALUES(user_balance_status),
+    today_daily_budget=VALUES(today_daily_budget), show_status=VALUES(show_status);
+    ", placeholder.join(","));
+    
+
+    let mut query = sqlx::query(sql.as_str());
+
+    for vo in campaigns {
+        query = query.bind(advertiser_id)
+        .bind(&vo.campaign_id)
+        .bind(advertiser_id)
+        .bind(&vo.campaign_name)
+        .bind(&vo.campaign_status)
+        .bind(&vo.campaign_daily_budget_status)
+        .bind(&vo.user_balance_status)
+        .bind(&vo.product_type)
+        .bind(&vo.today_daily_budget)
+        .bind(&vo.created_time)
+        .bind(&vo.show_status)
+        .bind(&vo.campaign_type)
+        .bind(&vo.sync_flow_resource_searchad)
+    }
+    
+    let cmd = query.sql();
+    let rs = query.execute(pool).await;
+    match rs {
+        Ok(v) => {},
+        Err(e) => {
+            println!("save_campaigns err {}", e);
+            println!("{}", cmd);
         }
     }
 }

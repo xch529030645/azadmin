@@ -1510,6 +1510,19 @@ impl GameService {
         // }
     }
 
+    fn check_roas_by_operator(&self, operator: i32, roas: f64, compare_roas: f64) -> bool {
+        if operator == 1 {
+            roas < compare_roas
+        } else if operator == 2 {
+            roas > compare_roas
+        } else if operator == 3 {
+            roas <= compare_roas
+        } else if operator == 4 {
+            roas >= compare_roas
+        } else {
+            false
+        }
+    }
 
     pub async fn check_collection_tasks(&self, pool: &Pool<MySql>) {
         println!("start check_collection_tasks");
@@ -1525,17 +1538,22 @@ impl GameService {
                 return;
             }
             if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {
-                let mut shutdown_ids = vec![];
+                let mut shutdown_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
+                let mut resume_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
                 for task in &tasks {
                     if let Some(advertisers) = &task.advertisers {
                         if task.check_hour == hour && minute >= task.check_minute {
                             for stat in &stats {
                                 if advertisers.contains(&stat.advertiser_id) {
+                                    let roas = stat.iaa / stat.cost;
                                     if task.operation == 1 {
-                                        let roas = stat.iaa / stat.cost;
-                                        if roas < task.require_roas && stat.cost >= task.min_cost {
+                                        if self.check_roas_by_operator(task.operator, roas, task.require_roas) && stat.cost >= task.min_cost {
                                             println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
                                             shutdown_ids.push((task, stat));
+                                        }
+                                    } else if task.operation == 2 {
+                                        if self.check_roas_by_operator(task.operator, roas, task.require_roas) && stat.cost >= task.min_cost {
+                                            resume_ids.push((task, stat));
                                         }
                                     }
                                 }
@@ -1545,17 +1563,10 @@ impl GameService {
                     }
                 }
                 if !shutdown_ids.is_empty() {
-                    let update_status = "OPERATION_DISABLE".to_string();
-                    for vo in shutdown_ids {
-                        if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
-                            let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
-                            if suc {
-                                println!("update_campaign_status success {}", &vo.1.advertiser_id);
-                                game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                                game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
-                            }
-                        }
-                    }
+                    self.batch_shutdown(pool, &shutdown_ids).await;
+                }
+                if !resume_ids.is_empty() {
+                    self.batch_resume(pool, &resume_ids).await;
                 }
             }
             
@@ -1567,6 +1578,129 @@ impl GameService {
 
         // now.hour()
         // now.minute()
+    }
+
+    async fn batch_shutdown(&self, pool: &Pool<MySql>, ids: &Vec<(&CollectionTask, &CampaignStat)>) {
+        let now = Local::now();
+        let today = now.format("%Y-%m-%d").to_string();
+
+        let update_status = "OPERATION_DISABLE".to_string();
+        for vo in ids {
+            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
+                let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
+                if suc {
+                    println!("update_campaign_status success {}", &vo.1.advertiser_id);
+                    game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
+                    game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                }
+            }
+        }
+    }
+
+    async fn batch_resume(&self, pool: &Pool<MySql>, ids: &Vec<(&CollectionTask, &CampaignStat)>) {
+        let now = Local::now();
+        let today = now.format("%Y-%m-%d").to_string();
+
+
+        let update_status = "OPERATION_DISABLE".to_string();
+        for vo in ids {
+            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
+
+                // let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
+                // if suc {
+                //     println!("update_campaign_status success {}", &vo.1.advertiser_id);
+                //     game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
+                //     game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                // }
+            }
+        }
+    }
+
+    pub async fn query_campaigns(&self, pool: &Pool<MySql>) {
+        println!("query_campaigns");
+        let advertisers = self.get_advertisers(pool).await;
+        if let Some(advertisers) = advertisers {
+            let mut thread_headlers = vec![];
+            let mut task_list = vec![];
+            let thread_task_list = Arc::new(Mutex::new(task_list));
+
+            for advertiser in advertisers {
+                let tasks: Arc<Mutex<Vec<(String, i32)>>> = Arc::clone(&thread_task_list);
+                let mysql = pool.clone();
+                let handle = actix_rt::spawn(async move {
+                    let mut loop_idx = 0;
+                    loop {
+                        if loop_idx == 0 {
+                            if let Some(token) = &advertiser.access_token {
+                                let rs = server_api::query_campaigns(token, &advertiser.advertiser_id, 1).await;
+                                if let Some(rs) = rs {
+                                    Self::safe_add_query_campaign_task(&tasks, rs.0, &advertiser.advertiser_id);
+                                    Self::save_campaigns(&mysql, &rs.1, &advertiser.advertiser_id).await;
+                                }
+                            } else {
+                                break;
+                            }
+                        } else {
+                            let task_info = Self::safe_get_query_campaign_task(&tasks);
+                            if let Some(task_info) = task_info {
+                                if let Some(token) = game_repository::get_marketing_access_token(&mysql, &task_info.0).await {
+                                    let rs = server_api::query_campaigns(&token, &task_info.0, task_info.1).await;
+                                    if let Some(rs) = rs {
+                                        Self::save_campaigns(&mysql, &rs.1, &task_info.0).await;
+                                    }
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        // let task_info = service.get_task(&tasks);
+                        
+                        loop_idx = loop_idx + 1;
+                    }
+                });
+                thread_headlers.push(handle);
+            }
+
+            for handle in thread_headlers {
+                if !handle.is_finished() {
+                    handle.await;
+                }
+            }
+
+            println!("query_campaigns done");
+        }
+    }
+
+    fn safe_add_query_campaign_task(tasks: &Arc<Mutex<Vec<(String, i32)>>>, pages: i64, advertiser_id: &String) {
+        let rs = tasks.lock();
+        match rs {
+            Ok(mut v) => {
+                for i in 2 .. pages {
+                    v.push((advertiser_id.clone(), i as i32));
+                }
+            },
+            Err(_) => {}
+        }
+    }
+
+    fn safe_get_query_campaign_task(tasks: &Arc<Mutex<Vec<(String, i32)>>>) -> Option<(String, i32)> {
+        let rs = tasks.lock();
+        match rs {
+            Ok(mut v) => {
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v.remove(0))
+                }
+            },
+            Err(_) => None
+        }
+    }
+
+    async fn save_campaigns(pool: &Pool<MySql>, campaigns: &Vec<Campaign>, advertiser_id: &String) {
+        game_repository::save_campaigns(pool, campaigns, advertiser_id).await;
     }
     
 }

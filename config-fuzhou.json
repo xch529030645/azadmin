@@ -1,0 +1,6 @@
+{
+    "host": "159.138.21.184",
+    "port": 3306,
+    "password": "Christina209",
+    "profiles": "dev"
+}
