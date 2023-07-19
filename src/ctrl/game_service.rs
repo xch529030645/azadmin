@@ -1547,12 +1547,12 @@ impl GameService {
                                 if advertisers.contains(&stat.advertiser_id) {
                                     let roas = stat.iaa / stat.cost;
                                     if task.operation == 1 {
-                                        if self.check_roas_by_operator(task.operator, roas, task.require_roas) && stat.cost >= task.min_cost {
+                                        if stat.cost >= task.min_cost && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
                                             println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
                                             shutdown_ids.push((task, stat));
                                         }
                                     } else if task.operation == 2 {
-                                        if self.check_roas_by_operator(task.operator, roas, task.require_roas) && stat.cost >= task.min_cost {
+                                        if stat.cost >= task.min_cost && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
                                             resume_ids.push((task, stat));
                                         }
                                     }
@@ -1589,7 +1589,7 @@ impl GameService {
             let status = game_repository::get_campaign_status(pool, &vo.1.campaign_id).await;
 
             let is_open = if let Some(status) = &status {
-                status.eq("OPERATION_ENABLE")
+                status.eq("OPERATION_STATUS_ENABLE")
             } else {
                 true
             };
@@ -1618,7 +1618,7 @@ impl GameService {
             let status = game_repository::get_campaign_status(pool, &vo.1.campaign_id).await;
 
             let is_close = if let Some(status) = &status {
-                status.eq("OPERATION_DISABLE")
+                status.eq("OPERATION_STATUS_DISABLE")
             } else {
                 true
             };
