@@ -1412,3 +1412,20 @@ pub async fn save_campaigns(pool: &Pool<MySql>, campaigns: &[Campaign], advertis
         }
     }
 }
+
+pub async fn get_campaign_status(pool: &Pool<MySql>, campaign_id: &str) -> Option<String> {
+    let rs = sqlx::query("SELECT campaign_status FROM campaign_list WHERE campaign_id=?")
+        .bind(campaign_id)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            let rs = v.get(0);
+            rs
+        },
+        Err(e) => {
+            println!("get_campaign_status: {}", e);
+            None
+        }
+    }
+}

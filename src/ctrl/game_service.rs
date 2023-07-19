@@ -1586,14 +1586,25 @@ impl GameService {
 
         let update_status = "OPERATION_DISABLE".to_string();
         for vo in ids {
-            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
-                let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
-                if suc {
-                    println!("update_campaign_status success {}", &vo.1.advertiser_id);
-                    game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                    game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+            let status = game_repository::get_campaign_status(pool, &vo.1.campaign_id).await;
+
+            let is_open = if let Some(status) = &status {
+                status.eq("OPERATION_ENABLE")
+            } else {
+                true
+            };
+
+            if is_open {
+                if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
+                    let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
+                    if suc {
+                        println!("update_campaign_status success {}", &vo.1.advertiser_id);
+                        // game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
+                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                    }
                 }
             }
+            
         }
     }
 
@@ -1602,16 +1613,25 @@ impl GameService {
         let today = now.format("%Y-%m-%d").to_string();
 
 
-        let update_status = "OPERATION_DISABLE".to_string();
+        let update_status = "OPERATION_ENABLE".to_string();
         for vo in ids {
-            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
+            let status = game_repository::get_campaign_status(pool, &vo.1.campaign_id).await;
 
-                // let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
-                // if suc {
-                //     println!("update_campaign_status success {}", &vo.1.advertiser_id);
-                //     game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                //     game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
-                // }
+            let is_close = if let Some(status) = &status {
+                status.eq("OPERATION_DISABLE")
+            } else {
+                true
+            };
+
+            if is_close {
+                if let Some(access_token) = game_repository::get_marketing_access_token(pool, &vo.1.advertiser_id).await {
+                    let suc = server_api::update_campaign_status(&access_token, &vo.1.advertiser_id, &vo.1.campaign_id, &update_status).await;
+                    if suc {
+                        println!("update_campaign_status success {}", &vo.1.advertiser_id);
+                        // game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
+                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                    }
+                }
             }
         }
     }
