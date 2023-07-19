@@ -783,7 +783,7 @@ pub async fn query_campaigns(access_token: &String, advertiser_id: &String, page
                         Some((total, ret))
                     } else {
                         let msg = v.get("message")?.as_str();
-                        println!("query_campaigns err 2: {:?}", msg);
+                        println!("query_campaigns err 2: {:?}", code);
                         None
                     }
                 },
