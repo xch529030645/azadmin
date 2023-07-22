@@ -542,7 +542,8 @@ pub struct ReqCreative {
     pub icons: Option<Vec<ReqCreativeAssets>>,
     pub images: Option<Vec<ReqCreativeAssets>>,
     pub videos: Option<Vec<ReqCreativeAssets>>,
-    pub size: String
+    pub size: String,
+    pub corprate_name: Option<String>
 }
 
 

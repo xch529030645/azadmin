@@ -465,7 +465,7 @@ impl PromotionService {
                 }
             }
 
-            server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id).await;
+            server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
         }
         None
     }

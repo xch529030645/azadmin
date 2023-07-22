@@ -245,7 +245,8 @@ pub struct ReqContentStruct {
     pub images: Option<Vec<ReqAssetsStruct>>,
     pub icon: Option<ReqAssetsStruct>,
     pub video: Option<ReqAssetsStruct>,
-    pub title: Option<ReqTitleStruct>
+    pub title: Option<ReqTitleStruct>,
+    pub corporate: Option<ReqTitleStruct>
 }
 
 
