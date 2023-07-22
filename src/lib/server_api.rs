@@ -604,11 +604,12 @@ pub async fn query_position_detail(access_token: &String, advertiser_id: &String
     }
 }
 
-pub async fn upload_file(access_token: &String, advertiser_id: &String, aid: i32) -> Option<i64> {
+pub async fn upload_file(access_token: &String, advertiser_id: &String, aid: i32, file_hash_sha256: &String) -> Option<i64> {
     let params = serde_json::json!({
         "access_token": access_token,
         "advertiser_id": advertiser_id,
-        "aid": aid
+        "aid": aid,
+        "file_hash_sha256": file_hash_sha256
     });
     let client: reqwest::Client = reqwest::Client::new();
     let rs = client.post(format!("http://127.0.0.1:10003/assets/inv/upload_assets?access_token={}&advertiser_id={}&aid={}", access_token, advertiser_id, aid)).json(&params).send().await;

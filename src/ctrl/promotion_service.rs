@@ -2,7 +2,8 @@ use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, fs::{
 use chrono::{Local, DateTime, Days};
 use serde_json::Value;
 use sqlx::{Pool, MySql, Row};
-use ssh_rs::new;
+// use ssh_rs::new;
+use uuid::Uuid;
 
 use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData, ctrl::promotion_service};
 
@@ -296,9 +297,9 @@ impl PromotionService {
     }
 
 
-    pub async fn upload_file(&self, pool: &Pool<MySql>, aid: i32, advertiser_id: &String) -> Option<i64> {
+    pub async fn upload_file(pool: &Pool<MySql>, aid: i32, file_hash_sha256: &String, advertiser_id: &String) -> Option<i64> {
         let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await.unwrap();
-        server_api::upload_file(&access_token, advertiser_id, aid).await
+        server_api::upload_file(&access_token, advertiser_id, aid, file_hash_sha256).await
 
         // let mut ret = None;
         // let rs = server_api::send_download(aid).await;
@@ -370,48 +371,36 @@ impl PromotionService {
         }
     }
 
-    pub async fn create_ads(&self, pool: &Pool<MySql>, param: &ReqCreateAds) -> i32 {
+    pub async fn create_ads(&self, pool: &Pool<MySql>, user_data: &UserData, param: &ReqCreateAds) -> String {
+        let uuid = Uuid::new_v4();
+        let request_id = uuid.to_string();
         for ready_ad in &param.ad_list {
-            if let Some(access_token) = game_repository::get_marketing_access_token(pool, &ready_ad.advertiser_id).await {
-                let daily_budget = ready_ad.budget.parse::<i32>().unwrap_or(0);
-                if daily_budget == 0 {
-                    continue;
-                }
-                let rs = server_api::create_campaign(access_token.as_str(), &ready_ad.advertiser_id, &ready_ad.campaign_name, daily_budget).await;
-                if let Some(rs_campaign) = rs {
-                    let mut product_id = game_repository::get_app_product_id(pool, &ready_ad.advertiser_id, ready_ad.app).await;
-                    if product_id.is_none() {
-                        let app_id = game_repository::get_app_id(pool, ready_ad.app).await;
-                        if let Some(app_id) = app_id {
-                            let rs_product = server_api::create_product(&access_token, &ready_ad.advertiser_id, &app_id).await;
-                            if let Some(rs_product) = rs_product {
-                                game_repository::save_product_id(pool, &app_id, &ready_ad.advertiser_id, &rs_product.product_id).await;
-                                product_id = Some(rs_product.product_id);
-                            }
-                        }
-                    }
-
-                    if product_id.is_some() {
-                        let rs: Option<ResCreateAdgroupData> = server_api::create_adgroup(&access_token, &rs_campaign.campaign_id, &product_id.unwrap(), ready_ad).await;
-                        if let Some(adgroup) = rs {
-                            self.create_creative(pool, &access_token, &adgroup, ready_ad).await;
-                        }
-                    }
-                    
-                }
+            let txt = serde_json::to_string(ready_ad);
+            if let Ok(json) = txt {
+                let rs = sqlx::query("INSERT INTO azadmin.ads
+                    (request_id, advertiser_id, campaign_name, uid, create_params)
+                    VALUES(?, ?, ?, ?, ?);
+                    ")
+                    .bind(&request_id)
+                    .bind(&ready_ad.advertiser_id)
+                    .bind(&ready_ad.campaign_name)
+                    .bind(&user_data.id)
+                    .bind(&json)
+                    .execute(pool)
+                    .await;
             }
         }
-        0
+        serde_json::json!({"err": 0, "request_id": request_id}).to_string()
     }
 
-    async fn create_creative(&self, pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) -> Option<i32> {
+    async fn create_creative(pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) -> Option<i64> {
         for creative in &param.creatives {
             let mut icon_asset_id: Option<i64> = None;
             if let Some(icons) = &creative.icons {
                 if let Some(inv) = icons.first() {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     if asset_id.is_none() {
-                        icon_asset_id = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        icon_asset_id = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if icon_asset_id.is_none() {
                             println!("icon_asset_id is none");
                             return None;
@@ -430,7 +419,7 @@ impl PromotionService {
                 if let Some(inv) = icons.first() {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     if asset_id.is_none() {
-                        video_id = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        video_id = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if video_id.is_none() {
                             println!("video_id is none");
                             return None;
@@ -448,7 +437,7 @@ impl PromotionService {
                 for inv in images {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     let id = if asset_id.is_none() {
-                        let aid = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        let aid = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if aid.is_none() {
                             println!("image is none");
                             return None;
@@ -465,7 +454,8 @@ impl PromotionService {
                 }
             }
 
-            server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
+            let creative_id = server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
+            return creative_id;
         }
         None
     }
@@ -557,5 +547,100 @@ impl PromotionService {
             }
         }
     }
+
+    pub async fn check_create_ads(&self, pool: &Pool<MySql>) {
+        let rs = sqlx::query_as::<_, CreateAdRequest>("SELECT DISTINCT(request_id) from ads limit 8")
+            .fetch_all(pool).await;
+        if let Ok(ads) = rs {
+            let mut thread_headlers = vec![];
+            for ad in ads {
+                let mysql = pool.clone();
+                let request_id = ad.request_id.clone();
+                let handle = actix_rt::spawn(async move {
+                    Self::create_ad_for_request_id(&mysql, &request_id).await;
+                });
+                thread_headlers.push(handle);
+            }
+            
+
+            for handle in thread_headlers {
+                if !handle.is_finished() {
+                    handle.await;
+                }
+            }
+        }
+    }
+
+    async fn create_ad_for_request_id(pool: &Pool<MySql>, request_id: &String) {
+        let ads = Self::get_ad_create_data(pool, request_id).await;
+        if let Some(ads) = ads {
+            for ad in &ads {
+                let ad_id = ad.0;
+                let ready_ad = &ad.1;
+                if let Some(access_token) = game_repository::get_marketing_access_token(pool, &ready_ad.advertiser_id).await {
+                    let daily_budget = ready_ad.budget.parse::<i32>().unwrap_or(0);
+                    if daily_budget == 0 {
+                        continue;
+                    }
+                    let rs = server_api::create_campaign(access_token.as_str(), &ready_ad.advertiser_id, &ready_ad.campaign_name, daily_budget).await;
+                    if let Some(rs_campaign) = rs {
+                        let mut product_id = game_repository::get_app_product_id(pool, &ready_ad.advertiser_id, ready_ad.app).await;
+                        if product_id.is_none() {
+                            let app_id = game_repository::get_app_id(pool, ready_ad.app).await;
+                            if let Some(app_id) = app_id {
+                                let rs_product = server_api::create_product(&access_token, &ready_ad.advertiser_id, &app_id).await;
+                                if let Some(rs_product) = rs_product {
+                                    game_repository::save_product_id(pool, &app_id, &ready_ad.advertiser_id, &rs_product.product_id).await;
+                                    product_id = Some(rs_product.product_id);
+                                }
+                            }
+                        }
+    
+                        if product_id.is_some() {
+                            let rs: Option<ResCreateAdgroupData> = server_api::create_adgroup(&access_token, &rs_campaign.campaign_id, &product_id.unwrap(), ready_ad).await;
+                            if let Some(adgroup) = rs {
+                                Self::create_creative(pool, &access_token, &adgroup, ready_ad).await;
+                            }
+
+                            Self::update_ad_campaign_id(pool, ad_id, &rs_campaign.campaign_id).await;
+                        }
+                        
+                    }
+                }
+            }
+        }
+    }
+
+    async fn update_ad_campaign_id(pool: &Pool<MySql>, ad_id: i32, campaign_id: &String) {
+        let rs = sqlx::query("UPDATE ads SET campaign_id=? WHERE id=?")
+            .bind(campaign_id)
+            .bind(ad_id)
+            .execute(pool).await;
+    }
+
+    async fn get_ad_create_data(pool: &Pool<MySql>, request_id: &String) -> Option<Vec<(i32, ReqReadyAd)>> {
+        let rs = sqlx::query("SELECT id, create_params FROM ads WHERE request_id=?")
+            .bind(request_id)
+            .fetch_all(pool).await;
+        match rs {
+            Ok(v) => {
+                let mut ret = vec![];
+                for row in v {
+                    let id: i32 = row.get(0);
+                    let create_params: String = row.get(1);
+                    let vo: Result<ReqReadyAd, serde_json::Error> = serde_json::from_str(create_params.as_str());
+                    if let Ok(vo) = vo {
+                        ret.push((id, vo));
+                    }
+                }
+                Some(ret)
+            },
+            Err(e) => {
+                println!("get_ad_create_data err: {}", e);
+                None
+            }
+        }
+    }
+
     
 }
