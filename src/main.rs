@@ -41,6 +41,56 @@ fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
                 "root",server_config.password,server_config.host,server_config.port);
 }
 
+fn start_timer(server_config: ServerConfig) {
+    actix_rt::spawn(async move {
+        let pool = MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(&get_mysql_connect_url(&server_config))
+        .await.unwrap_or_else(|_| { std::process::exit(0) });
+        let game_service = GameService::create();
+        // let promotion_service = PromotionService::create();
+
+        let mut interval = time::interval(Duration::from_secs(60));
+        let mut task_interval_1 = 1;
+        loop {
+            interval.tick().await;
+            task_interval_1 = task_interval_1 - 1;
+            if task_interval_1 == 0 {
+                task_interval_1 = 5;
+                game_controller::restart_mysql(&pool).await;
+                game_controller::check_access_token(&pool, &game_service).await;
+                game_controller::query_campaigns(&pool, &game_service).await;
+                game_controller::query_reports(&pool, &game_service).await;
+                game_controller::query_ads_reports(&pool, &game_service).await;
+                game_controller::query_last_90_day_earning_reports(&pool, &game_service).await;
+                game_controller::query_last_90_release_reports(&pool, &game_service).await;
+                game_controller::query_umeng_apps(&pool, &game_service).await;
+                game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
+                game_controller::query_umeng_duration(&pool, &game_service).await;
+
+                // promotion_controller::fetch_assets(&pool, &promotion_service).await;
+            }
+            game_controller::check_package_app_id(&pool, &game_service).await
+        }
+    });
+}
+
+fn start_ad_thread(server_config: ServerConfig) {
+    actix_rt::spawn(async move {
+        let pool = MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(&get_mysql_connect_url(&server_config))
+        .await.unwrap_or_else(|_| { std::process::exit(0) });
+        let promotion_service = PromotionService::create();
+
+        let mut interval = time::interval(Duration::from_secs(1));
+        loop {
+            interval.tick().await;
+            promotion_service.check_create_ads(&pool).await;
+        }
+    });
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("start");
@@ -61,37 +111,8 @@ async fn main() -> std::io::Result<()> {
 
     if server_config.profiles.eq("prod") {
         println!("prod");
-        actix_rt::spawn(async move {
-            let pool = MySqlPoolOptions::new()
-            .max_connections(5)
-            .connect(&get_mysql_connect_url(&server_config))
-            .await.unwrap_or_else(|_| { std::process::exit(0) });
-            let game_service = GameService::create();
-            let promotion_service = PromotionService::create();
-    
-            let mut interval = time::interval(Duration::from_secs(60));
-            let mut task_interval_1 = 1;
-            loop {
-                interval.tick().await;
-                task_interval_1 = task_interval_1 - 1;
-                if task_interval_1 == 0 {
-                    task_interval_1 = 5;
-                    game_controller::restart_mysql(&pool).await;
-                    game_controller::check_access_token(&pool, &game_service).await;
-                    game_controller::query_campaigns(&pool, &game_service).await;
-                    game_controller::query_reports(&pool, &game_service).await;
-                    game_controller::query_ads_reports(&pool, &game_service).await;
-                    game_controller::query_last_90_day_earning_reports(&pool, &game_service).await;
-                    game_controller::query_last_90_release_reports(&pool, &game_service).await;
-                    game_controller::query_umeng_apps(&pool, &game_service).await;
-                    game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
-                    game_controller::query_umeng_duration(&pool, &game_service).await;
-
-                    // promotion_controller::fetch_assets(&pool, &promotion_service).await;
-                }
-                game_controller::check_package_app_id(&pool, &game_service).await
-            }
-        });
+        start_timer(server_config.clone());
+        start_ad_thread(server_config.clone());
     }
     
 

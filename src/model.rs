@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct ServerConfig {
     pub password: String,
     pub host: String,
@@ -530,7 +530,11 @@ pub struct ReqWebQueryPositionPrice {
 
 #[derive(Serialize,Deserialize)]
 pub struct ReqCreativeAssets {
-    pub id: i32
+    pub id: i32,
+    pub file_url: String,
+    pub assets_name: String,
+    pub key: String,
+    pub file_hash_sha256: String
 }
 
 
@@ -570,7 +574,6 @@ pub struct ReqReadyAd {
 
 #[derive(Serialize,Deserialize)]
 pub struct ReqCreateAds {
-    pub request_id: String,
     pub ad_list: Vec<ReqReadyAd>
 }
 
@@ -607,6 +610,13 @@ pub struct Campaign {
     pub flow_resource: Option<String>,
     pub sync_flow_resource_searchad: Option<String>,
 }
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct CreateAdRequest {
+    pub request_id: String
+}
+
+
 
 
 #[derive(Deserialize, Serialize)]
