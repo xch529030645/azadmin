@@ -330,7 +330,7 @@ pub struct ResCreateProduct {
 
 #[derive(Deserialize, Serialize)]
 pub struct ResCreateAdgroupData {
-    pub adgroup_id: String
+    pub adgroup_id: i64
 }
 
 
