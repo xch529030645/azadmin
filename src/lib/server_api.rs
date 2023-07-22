@@ -398,7 +398,7 @@ pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup
     };
 
     let create_creative_param = serde_json::to_string_pretty(&data);
-    println!("create_creative_param: {}", create_creative_param);
+    println!("create_creative_param: {}", create_creative_param.unwrap());
 
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/creative/create", "POST", access_token, &data).await;
     match rs {
