@@ -290,7 +290,7 @@ pub async fn create_campaign(access_token: &str, advertiser_id: &str, campaign_n
 
 pub async fn create_adgroup(access_token: &str, campaign_id: &String, product_id: &String, ready_ad: &ReqReadyAd) -> Option<ResCreateAdgroupData> {
     Some(ResCreateAdgroupData {
-        adgroup_id: "35836712".to_string()
+        adgroup_id: 35836712
     })
     // println!("start create_adgroup: {} {}", campaign_id, product_id);
     // let mut adgroup_begin_date: String;
