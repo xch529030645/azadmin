@@ -253,86 +253,93 @@ pub async fn query_package_app_id(client_id: &String, access_token: &String, pac
 
 
 pub async fn create_campaign(access_token: &str, advertiser_id: &str, campaign_name: &str, daily_budget: i32) -> Option<ResCampaign> {
-    println!("start create_campaign for {}", advertiser_id);
-    let data = ReqCreateCampaign {
-        advertiser_id: advertiser_id.to_string(), 
-        campaign_name: campaign_name.to_string(), 
-        product_type: "ANDROID_APP".to_string(),
-        daily_budget
-    };
-    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/create", "POST", access_token, &data).await;
-    match rs {
-        Some(txt) => {
-            let rs: Result<ResCreateCampaign, serde_json::Error> = serde_json::from_str(txt.as_str());
-            match rs {
-                Ok(v) => {
-                    if v.code == "200" {
-                        println!("create_campaign success: {}", &v.data.campaign_id);
-                        Some(v.data)
-                    } else {
-                        println!("create_campaign failed: {:?}", &v.message);
-                        None
-                    }
-                },
-                Err(e) => {
-                    println!("create_campaign failed: {} {}", e, &txt);
-                    None
-                }
-            }
-        },
-        None => None
-    }
+    Some(ResCampaign {
+        campaign_id: "28400197".to_string()
+    })
+    
+    // println!("start create_campaign for {}", advertiser_id);
+    // let data = ReqCreateCampaign {
+    //     advertiser_id: advertiser_id.to_string(), 
+    //     campaign_name: campaign_name.to_string(), 
+    //     product_type: "ANDROID_APP".to_string(),
+    //     daily_budget
+    // };
+    // let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/campaign/create", "POST", access_token, &data).await;
+    // match rs {
+    //     Some(txt) => {
+    //         let rs: Result<ResCreateCampaign, serde_json::Error> = serde_json::from_str(txt.as_str());
+    //         match rs {
+    //             Ok(v) => {
+    //                 if v.code == "200" {
+    //                     println!("create_campaign success: {}", &v.data.campaign_id);
+    //                     Some(v.data)
+    //                 } else {
+    //                     println!("create_campaign failed: {:?}", &v.message);
+    //                     None
+    //                 }
+    //             },
+    //             Err(e) => {
+    //                 println!("create_campaign failed: {} {}", e, &txt);
+    //                 None
+    //             }
+    //         }
+    //     },
+    //     None => None
+    // }
 }
 
 pub async fn create_adgroup(access_token: &str, campaign_id: &String, product_id: &String, ready_ad: &ReqReadyAd) -> Option<ResCreateAdgroupData> {
-    println!("start create_adgroup: {} {}", campaign_id, product_id);
-    let mut adgroup_begin_date: String;
-    let mut adgroup_end_date: Option<String> = None;
-    if ready_ad.promotion_date.is_empty() {
-        adgroup_begin_date = Local::now().format("%Y-%m-%d").to_string();
-    } else {
-        adgroup_begin_date = ready_ad.promotion_date.first().unwrap().clone();
-        adgroup_end_date = match ready_ad.promotion_date.get(1) {
-            Some(v) => Some(v.clone()),
-            None => None
-        }
-    }
-    let data = ReqCreateAdgroup {
-        advertiser_id: ready_ad.advertiser_id.clone(),
-        adgroup_name: ready_ad.ad_name.clone(),
-        campaign_id: campaign_id.clone(),
-        targeting_package_id: ready_ad.audience_package,
-        targeting_package_scope: "SHARE".to_string(),
-        product_id: product_id.to_string(),
-        adgroup_begin_date,
-        adgroup_end_date,
-        time_period_type: ready_ad.time_type.clone(),
-        time_period: None,
-        price_type: ready_ad.bid_type.clone(),
-        price: ready_ad.bid.parse::<f32>().unwrap(),
-        creative_size_id: ready_ad.position.clone()
-    };
-    let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/adgroup/create", "POST", access_token, &data).await;
-    match rs {
-        Some(txt) => {
-            let rs: Result<ResCreateAdgroup, serde_json::Error> = serde_json::from_str(txt.as_str());
-            match rs {
-                Ok(v) => {
-                    if v.code == "200" {
-                        println!("create_adgroup success: {}", &v.data.adgroup_id);
-                        Some(v.data)
-                    } else {
-                        None
-                    }
-                },
-                Err(e) => {
-                    println!("create_adgroup err: {} {}", e, txt);
-                    None
-                }
-            }
-        },
-        None => None
-    }
+    Some(ResCreateAdgroupData {
+        adgroup_id: "35836712".to_string()
+    })
+    // println!("start create_adgroup: {} {}", campaign_id, product_id);
+    // let mut adgroup_begin_date: String;
+    // let mut adgroup_end_date: Option<String> = None;
+    // if ready_ad.promotion_date.is_empty() {
+    //     adgroup_begin_date = Local::now().format("%Y-%m-%d").to_string();
+    // } else {
+    //     adgroup_begin_date = ready_ad.promotion_date.first().unwrap().clone();
+    //     adgroup_end_date = match ready_ad.promotion_date.get(1) {
+    //         Some(v) => Some(v.clone()),
+    //         None => None
+    //     }
+    // }
+    // let data = ReqCreateAdgroup {
+    //     advertiser_id: ready_ad.advertiser_id.clone(),
+    //     adgroup_name: ready_ad.ad_name.clone(),
+    //     campaign_id: campaign_id.clone(),
+    //     targeting_package_id: ready_ad.audience_package,
+    //     targeting_package_scope: "SHARE".to_string(),
+    //     product_id: product_id.to_string(),
+    //     adgroup_begin_date,
+    //     adgroup_end_date,
+    //     time_period_type: ready_ad.time_type.clone(),
+    //     time_period: None,
+    //     price_type: ready_ad.bid_type.clone(),
+    //     price: ready_ad.bid.parse::<f32>().unwrap(),
+    //     creative_size_id: ready_ad.position.clone()
+    // };
+    // let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/adgroup/create", "POST", access_token, &data).await;
+    // match rs {
+    //     Some(txt) => {
+    //         let rs: Result<ResCreateAdgroup, serde_json::Error> = serde_json::from_str(txt.as_str());
+    //         match rs {
+    //             Ok(v) => {
+    //                 if v.code == "200" {
+    //                     println!("create_adgroup success: {}", &v.data.adgroup_id);
+    //                     Some(v.data)
+    //                 } else {
+    //                     None
+    //                 }
+    //             },
+    //             Err(e) => {
+    //                 println!("create_adgroup err: {} {}", e, txt);
+    //                 None
+    //             }
+    //         }
+    //     },
+    //     None => None
+    // }
 }
 
 
@@ -389,6 +396,9 @@ pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup
             )
         }
     };
+
+    let create_creative_param = serde_json::to_string_pretty(&data);
+    println!("create_creative_param: {}", create_creative_param.unwrap());
 
     let rs = curl("https://ads-dra.cloud.huawei.com/ads/v1/promotion/creative/create", "POST", access_token, &data).await;
     match rs {

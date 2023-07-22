@@ -1060,7 +1060,7 @@ pub async fn save_assets(pool: &Pool<MySql>, advertiser_id: &str, inv: &ResQuery
         .execute(pool).await;
 }
 
-pub async fn save_assets_advertiser(pool: &Pool<MySql>, asset_id: &String, aid: i32, advertiser_id: &String) {
+pub async fn save_assets_advertiser(pool: &Pool<MySql>, asset_id: &i64, aid: i32, advertiser_id: &String) {
     sqlx::query("INSERT INTO assets_advertiser (assets_id, aid, advertiser_id) SELECT ?,?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM assets_advertiser WHERE assets_id=?)")
         .bind(asset_id)
         .bind(aid)

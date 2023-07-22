@@ -411,19 +411,32 @@ impl PromotionService {
                 if let Some(inv) = icons.first() {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     if asset_id.is_none() {
-                        icon_asset_id = self.upload_file(pool, inv.id, &param.advertiser_id).await
+                        icon_asset_id = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        if icon_asset_id.is_none() {
+                            println!("icon_asset_id is none");
+                            return None;
+                        } else {
+                            game_repository::save_assets_advertiser(pool, &icon_asset_id.unwrap(), inv.id, &param.advertiser_id).await;
+                        }
                     } else {
                         icon_asset_id = asset_id;
                     }
                 }
             }
+            
 
             let mut video_id: Option<i64> = None;
             if let Some(icons) = &creative.videos {
                 if let Some(inv) = icons.first() {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     if asset_id.is_none() {
-                        video_id = self.upload_file(pool, inv.id, &param.advertiser_id).await
+                        video_id = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        if video_id.is_none() {
+                            println!("video_id is none");
+                            return None;
+                        } else {
+                            game_repository::save_assets_advertiser(pool, &video_id.unwrap(), inv.id, &param.advertiser_id).await;
+                        }
                     } else {
                         video_id = asset_id;
                     }
@@ -435,7 +448,14 @@ impl PromotionService {
                 for inv in images {
                     let asset_id = game_repository::get_asset_id(pool, inv.id, &param.advertiser_id).await;
                     let id = if asset_id.is_none() {
-                        self.upload_file(pool, inv.id, &param.advertiser_id).await
+                        let aid = self.upload_file(pool, inv.id, &param.advertiser_id).await;
+                        if aid.is_none() {
+                            println!("image is none");
+                            return None;
+                        } else {
+                            game_repository::save_assets_advertiser(pool, &aid.unwrap(), inv.id, &param.advertiser_id).await;
+                        }
+                        aid
                     } else {
                         asset_id
                     };
