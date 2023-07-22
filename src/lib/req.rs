@@ -252,7 +252,7 @@ pub struct ReqContentStruct {
 #[derive(Serialize,Deserialize)]
 pub struct ReqCreateCreative {
     pub advertiser_id: String,
-    pub adgroup_id: String,
+    pub adgroup_id: i64,
     pub creative_name: String,
     pub creative_size_sub_type: String,
     pub creative_size: String,

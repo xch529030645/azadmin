@@ -336,7 +336,7 @@ pub async fn create_adgroup(access_token: &str, campaign_id: &String, product_id
 }
 
 
-pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup_id: &String, creative_name: &String, creative_size_sub_type: &String, creative_size: &String, title: &String, images: Vec<i64>, icon: Option<i64>, video: Option<i64>) -> Option<i64> {
+pub async fn create_creative(access_token: &str, advertiser_id: &String, adgroup_id: &i64, creative_name: &String, creative_size_sub_type: &String, creative_size: &String, title: &String, images: Vec<i64>, icon: Option<i64>, video: Option<i64>) -> Option<i64> {
     let imagesStruct = if !images.is_empty() {
         let mut list: Vec<ReqAssetsStruct> = vec![];
         for imid in images {
