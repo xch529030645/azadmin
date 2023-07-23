@@ -534,7 +534,6 @@ pub struct ReqCreativeAssets {
     pub id: i32,
     pub file_url: String,
     pub assets_name: String,
-    pub key: String,
     pub file_hash_sha256: String
 }
 
