@@ -557,7 +557,7 @@ impl PromotionService {
     }
 
     pub async fn check_create_ads(&self, pool: &Pool<MySql>) {
-        let rs = sqlx::query_as::<_, CreateAdRequest>("SELECT DISTINCT(request_id) from ads limit 8")
+        let rs = sqlx::query_as::<_, CreateAdRequest>("SELECT DISTINCT(request_id) from ads WHERE ISNULL(campaign_id) limit 8")
             .fetch_all(pool).await;
         if let Ok(ads) = rs {
             let mut thread_headlers = vec![];
