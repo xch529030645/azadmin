@@ -633,7 +633,8 @@ pub struct AdsCreated {
     pub campaign_name: String,
     pub uid: i32,
     pub create_params: String,
-    pub create_time: String
+    pub create_time: String,
+    pub remark: String,
 }
 
 
