@@ -642,5 +642,23 @@ impl PromotionService {
         }
     }
 
+    pub async fn get_ads(&self, pool: &Pool<MySql>, params: &ReqGetAds) -> Option<Vec<AdsCreated>> {
+        let rs = sqlx::query_as::<_, AdsCreated>("
+        SELECT a.id, a.request_id, a.advertiser_id, a.campaign_id, a.campaign_name, a.uid, a.create_params, DATE_FORMAT(a.create_time, '%Y-%m-%d %T') AS create_time, b.remark FROM ads a 
+        LEFT JOIN advertisers b ON a.advertiser_id = b.advertiser_id 
+        LIMIT ?,?")
+            .bind(params.page * params.page_len)
+            .bind(params.page_len)
+            .fetch_all(pool).await;
+        match rs {
+            Ok(v) => {
+                Some(v)
+            },
+            Err(e) => {
+                println!("get_ads err: {}", e);
+                None
+            }
+        }
+    }
     
 }

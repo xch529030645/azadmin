@@ -109,3 +109,9 @@ pub async fn del_collection(_: UserData, data: web::Data<AppState>, promotion_se
     let err = promotion_service.del_collection(&data.pool, &param.0).await;
     return Results::err(err);
 }
+
+#[post("/azadmin/get_ads")]
+pub async fn get_ads(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqGetAds>) -> impl Responder {
+    let rs = promotion_service.get_ads(&data.pool, &param.0).await;
+    return Results::done(&rs.as_ref());
+}
