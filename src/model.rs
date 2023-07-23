@@ -3,6 +3,7 @@ use std::fs;
 
 // use actix_multipart_derive::MultipartForm;
 use actix_web::{Responder};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 
@@ -614,6 +615,25 @@ pub struct Campaign {
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct CreateAdRequest {
     pub request_id: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqGetAds {
+    pub page: i32,
+    pub page_len: i32,
+}
+
+
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct AdsCreated {
+    pub id: i32,
+    pub request_id: String,
+    pub advertiser_id: String,
+    pub campaign_id: Option<i64>,
+    pub campaign_name: String,
+    pub uid: i32,
+    pub create_params: String,
+    pub create_time: String
 }
 
 
