@@ -388,6 +388,14 @@ impl PromotionService {
                     .bind(&json)
                     .execute(pool)
                     .await;
+                match rs {
+                    Ok(v) => {
+
+                    },
+                    Err(e) => {
+                        println!("create_ads err: {}", e);
+                    }
+                }
             }
         }
         serde_json::json!({"err": 0, "request_id": request_id}).to_string()
