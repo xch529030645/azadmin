@@ -572,6 +572,7 @@ impl PromotionService {
     }
 
     async fn create_ad_for_request_id(pool: &Pool<MySql>, request_id: &String) {
+        println!("create_ad_for_request_id: {}", request_id);
         let ads = Self::get_ad_create_data(pool, request_id).await;
         if let Some(ads) = ads {
             for ad in &ads {
