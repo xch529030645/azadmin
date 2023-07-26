@@ -508,10 +508,11 @@ impl PromotionService {
     pub async fn add_collection(&self, pool: &Pool<MySql>, params: &ReqSaveCollection) -> i32 {
         let rs = if let Some(id) = &params.id {
             sqlx::query("UPDATE azadmin.collection_tasks
-            SET remark=?, min_cost=?, require_roas=?, check_hour=?, check_minute=?, operation=?, advertisers=?, operator=?
+            SET remark=?, min_cost=?, max_cost=?, require_roas=?, check_hour=?, check_minute=?, operation=?, advertisers=?, operator=?
             WHERE id=?;")
             .bind(&params.remark)
             .bind(&params.min_cost)
+            .bind(&params.max_cost)
             .bind(&params.require_roas)
             .bind(&params.check_hour)
             .bind(&params.check_minute)
@@ -522,10 +523,11 @@ impl PromotionService {
             .execute(pool).await
         } else {
             sqlx::query("INSERT INTO azadmin.collection_tasks
-            (remark, min_cost, require_roas, check_hour, check_minute, operation, advertisers, operator)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
+            (remark, min_cost, max_cost, require_roas, check_hour, check_minute, operation, advertisers, operator)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);")
             .bind(&params.remark)
             .bind(&params.min_cost)
+            .bind(&params.max_cost)
             .bind(&params.require_roas)
             .bind(&params.check_hour)
             .bind(&params.check_minute)
