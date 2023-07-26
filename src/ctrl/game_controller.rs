@@ -301,29 +301,50 @@ pub async fn query_last_90_day_earning_reports(pool: &Pool<MySql>, game_service:
 }
 
 pub async fn restart_mysql(pool: &Pool<MySql>) {
-    let today = Local::now().format("%Y-%m-%d").to_string();
-    let is_executed = game_repository::is_daily_task_executed(pool, &today, 6).await;
-    if !is_executed {
-        let th = Command::new("/usr/bin/systemctl").arg("restart").arg("mysqld").spawn();
-        match th {
-            Ok(th) => {
-                let out = th.wait_with_output();
-                match out {
-                    Ok(output) => {
-                        let out = String::from_utf8(output.stdout).unwrap();
-                        println!("{}", out);
-                        game_repository::execute_daily_task_done(pool, &today, 6).await;
-                    }
-                    Err(e) => {
-                        println!("restart_mysql {}", e);
-                    }
-                }
+    // let today = Local::now().format("%Y-%m-%d").to_string();
+    // let is_executed = game_repository::is_daily_task_executed(pool, &today, 6).await;
+    // if !is_executed {
+    //     let th = Command::new("/usr/bin/sh").arg("/root/azadmin/azadmin/check.sh").spawn();
+    //     match th {
+    //         Ok(th) => {
+    //             let out = th.wait_with_output();
+    //             match out {
+    //                 Ok(output) => {
+    //                     let out = String::from_utf8(output.stdout).unwrap();
+    //                     println!("{}", out);
+    //                     game_repository::execute_daily_task_done(pool, &today, 6).await;
+    //                 }
+    //                 Err(e) => {
+    //                     println!("restart_mysql {}", e);
+    //                 }
+    //             }
                 
-            }
-            Err(e) => {
-                println!("restart_mysql {}", e);
-            }
-        }
+    //         }
+    //         Err(e) => {
+    //             println!("restart_mysql {}", e);
+    //         }
+    //     }
         
+    // }
+
+    let th = Command::new("/usr/bin/sh").arg("/root/azadmin/azadmin/check.sh").spawn();
+    match th {
+        Ok(th) => {
+            let out = th.wait_with_output();
+            match out {
+                Ok(output) => {
+                    let out = String::from_utf8(output.stdout).unwrap();
+                    println!("{}", out);
+                    // game_repository::execute_daily_task_done(pool, &today, 6).await;
+                }
+                Err(e) => {
+                    println!("restart_mysql {}", e);
+                }
+            }
+            
+        }
+        Err(e) => {
+            println!("restart_mysql {}", e);
+        }
     }
 }
