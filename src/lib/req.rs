@@ -145,7 +145,7 @@ impl<'a> ReqCreateAudience<'a> {
             advertiser_id,
             targeting_name,
             targeting_description,
-            targeting_type: "TARGET_TYPE_APP",
+            targeting_type: "TARGET_TYPE_NOT_APP",
             current_custom_location_struct,
             not_installed_apps_struct: CustomLocation { value: vec![String::from("true")] },
             ai_target_flag: "AI_TARGET_DISABLE"
