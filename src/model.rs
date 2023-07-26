@@ -464,6 +464,7 @@ pub struct CollectionTask {
     pub enabled: bool,
     pub remark: Option<String>,
     pub min_cost: f64,
+    pub max_cost: Option<f64>,
     pub require_roas: f64,
     pub check_hour: i32,
     pub check_minute: i32,
@@ -505,6 +506,7 @@ pub struct FormUpdateCollectionAdvertisers {
 pub struct ReqSaveCollection {
     pub id: Option<i32>,
     pub min_cost: Option<f64>,
+    pub max_cost: Option<f64>,
     pub check_hour: Option<i32>,
     pub check_minute: Option<i32>,
     pub operation: i32,

@@ -1546,16 +1546,20 @@ impl GameService {
                             for stat in &stats {
                                 if advertisers.contains(&stat.advertiser_id) {
                                     let roas = stat.iaa / stat.cost;
-                                    if task.operation == 1 {
-                                        if stat.cost >= task.min_cost && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
+                                    let max_cost_check = if let Some(max_cost) = task.max_cost {
+                                        stat.cost <= max_cost
+                                    } else {
+                                        true
+                                    };
+                                    if stat.cost >= task.min_cost && max_cost_check && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
+                                        if task.operation == 1 {
                                             println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
-                                            shutdown_ids.push((task, stat));
-                                        }
-                                    } else if task.operation == 2 {
-                                        if stat.cost >= task.min_cost && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
+                                                shutdown_ids.push((task, stat));
+                                        } else if task.operation == 2 {
                                             resume_ids.push((task, stat));
                                         }
                                     }
+                                    
                                 }
                             }
                             game_repository::done_collection_task(pool, task.id).await;
