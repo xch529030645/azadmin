@@ -114,7 +114,7 @@ impl PromotionService {
     }
 
     pub async fn get_position(&self, pool: &Pool<MySql>, advertiser_id: &String) -> Option<Vec<Position>> {
-        let rs = sqlx::query_as::<_, Position>("SELECT creative_size_id, advertiser_id, content FROM positions WHERE advertiser_id=?")
+        let rs = sqlx::query_as::<_, Position>("SELECT creative_size_id, advertiser_id, content, creative_size_name FROM positions WHERE advertiser_id=? AND creative_size_name IN (SELECT name FROM position_important)")
             .bind(advertiser_id)
             .fetch_all(pool).await;
         match rs {
@@ -132,6 +132,23 @@ impl PromotionService {
         }
     }
 
+    async fn get_important_position(&self, pool: &Pool<MySql>) -> Vec<String> {
+        let rs = sqlx::query("SELECT name FROM position_important")
+            .fetch_all(pool).await;
+
+        let mut ret = vec![];
+        match rs {
+            Ok(list) => {
+                for v in list {
+                    let s: String = v.get(0);
+                    ret.push(s);
+                }
+            },
+            Err(_) => {}
+        }
+        ret
+    }
+
     async fn fetch_position(&self, pool: &Pool<MySql>, advertiser_id: &String) -> Option<Vec<Position>> {
         let access_token = game_repository::get_marketing_access_token(pool, advertiser_id).await;
         if let Some(access_token) = access_token {
@@ -140,20 +157,26 @@ impl PromotionService {
                 let json: Value = serde_json::from_str(txt.as_str()).unwrap();
                 let code: &str = json.get("code").unwrap().as_str().unwrap();
                 if code.eq("200") {
+                    let sizes = self.get_important_position(pool).await;
                     let data = json.get("data").unwrap();
                     let creative_size_info_list = data.get("creative_size_info_list").unwrap().as_array().unwrap();
                     let mut ret: Vec<Position> = Vec::new();
                     for info in creative_size_info_list {
                         let creative_size_id: String = info.get("creative_size_id").unwrap().as_i64().unwrap().to_string();
+                        let creative_size_name_dsp = info.get("creative_size_base_info").unwrap().get("creative_size_name_dsp").unwrap().to_string();
                         let content = info.to_string();
-                        ret.push(Position {
-                            creative_size_id: creative_size_id.clone(),
-                            advertiser_id: advertiser_id.clone(),
-                            content
-                        })
-                    }
-                    if !ret.is_empty() {
+
                         self.save_position(pool, advertiser_id, &ret).await;
+
+                        if sizes.contains(&creative_size_name_dsp) {
+                            ret.push(Position {
+                                creative_size_id: creative_size_id.clone(),
+                                advertiser_id: advertiser_id.clone(),
+                                content,
+                                creative_size_name: creative_size_name_dsp
+                            })
+                        }
+                        
                     }
                     Some(ret)
                 } else {
@@ -169,13 +192,13 @@ impl PromotionService {
     }
 
     async fn save_position(&self, pool: &Pool<MySql>, advertiser_id: &String, positions: &Vec<Position>) {
-        let mut sql = "INSERT INTO positions (creative_size_id, advertiser_id, content) VALUES ".to_string();
+        let mut sql = "INSERT INTO positions (creative_size_id, advertiser_id, content, creative_size_name) VALUES ".to_string();
         let mut placeholders: Vec<&str> = vec![];
         for _ in positions {
-            placeholders.push("(?,?,?)");
+            placeholders.push("(?,?,?,?)");
         }
         sql += placeholders.join(",").as_str();
-        sql += " ON DUPLICATE KEY UPDATE content=VALUES(content)";
+        sql += " ON DUPLICATE KEY UPDATE content=VALUES(content), creative_size_name=VALUES(creative_size_name)";
 
         let mut query = sqlx::query(sql.as_str());
         for info in positions {
@@ -401,7 +424,7 @@ impl PromotionService {
         serde_json::json!({"err": 0, "request_id": request_id}).to_string()
     }
 
-    async fn create_creative(pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) -> Option<i64> {
+    async fn create_creative(pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) {
         for creative in &param.creatives {
             let mut icon_asset_id: Option<i64> = None;
             if let Some(icons) = &creative.icons {
@@ -411,7 +434,7 @@ impl PromotionService {
                         icon_asset_id = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if icon_asset_id.is_none() {
                             println!("icon_asset_id is none");
-                            return None;
+                            continue;
                         } else {
                             game_repository::save_assets_advertiser(pool, &icon_asset_id.unwrap(), inv.id, &param.advertiser_id).await;
                         }
@@ -430,7 +453,7 @@ impl PromotionService {
                         video_id = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if video_id.is_none() {
                             println!("video_id is none");
-                            return None;
+                            continue;
                         } else {
                             game_repository::save_assets_advertiser(pool, &video_id.unwrap(), inv.id, &param.advertiser_id).await;
                         }
@@ -448,7 +471,7 @@ impl PromotionService {
                         let aid = Self::upload_file(pool, inv.id, &inv.file_hash_sha256, &param.advertiser_id).await;
                         if aid.is_none() {
                             println!("image is none");
-                            return None;
+                            continue;
                         } else {
                             game_repository::save_assets_advertiser(pool, &aid.unwrap(), inv.id, &param.advertiser_id).await;
                         }
@@ -463,9 +486,9 @@ impl PromotionService {
             }
 
             let creative_id = server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
-            return creative_id;
+            // return creative_id;
         }
-        None
+        // None
     }
 
 
