@@ -407,7 +407,8 @@ pub struct AudiencePreview {
 pub struct Position {
     pub creative_size_id: String,
     pub advertiser_id: String,
-    pub content: String
+    pub content: String,
+    pub creative_size_name: String
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
