@@ -204,13 +204,14 @@ impl PromotionService {
         for info in positions {
             query = query.bind(&info.creative_size_id)
             .bind(advertiser_id)
-            .bind(&info.content);
+            .bind(&info.content)
+            .bind(&info.creative_size_name);
         }
         let rs = query.execute(pool).await;
         match rs {
             Ok(v) => {},
             Err(e) => {
-                println!("save_position {}", e);
+                println!("save_position err: {}", e);
             }
         }
     }
