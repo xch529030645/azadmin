@@ -1,7 +1,7 @@
 use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, fs::{File, self}, io::{Write, Read}, borrow::BorrowMut, ops::Index, path};
 use chrono::{Local, DateTime, Days};
 use serde_json::Value;
-use sqlx::{Pool, MySql, Row};
+use sqlx::{Pool, MySql, Row, Execute};
 // use ssh_rs::new;
 use uuid::Uuid;
 
@@ -161,23 +161,31 @@ impl PromotionService {
                     let data = json.get("data").unwrap();
                     let creative_size_info_list = data.get("creative_size_info_list").unwrap().as_array().unwrap();
                     let mut ret: Vec<Position> = Vec::new();
+                    let mut positions: Vec<Position> = Vec::new();
                     for info in creative_size_info_list {
                         let creative_size_id: String = info.get("creative_size_id").unwrap().as_i64().unwrap().to_string();
-                        let creative_size_name_dsp = info.get("creative_size_base_info").unwrap().get("creative_size_name_dsp").unwrap().to_string();
+                        let creative_size_name_dsp = info.get("creative_size_base_info").unwrap().get("creative_size_name_dsp").unwrap().to_string().replace("\"", "");
                         let content = info.to_string();
-
-                        self.save_position(pool, advertiser_id, &ret).await;
-
-                        if sizes.contains(&creative_size_name_dsp) {
-                            ret.push(Position {
-                                creative_size_id: creative_size_id.clone(),
-                                advertiser_id: advertiser_id.clone(),
-                                content,
-                                creative_size_name: creative_size_name_dsp
-                            })
-                        }
+                        // println!("creative_size_name_dsp: {}", creative_size_name_dsp);
+                        let pos = Position {
+                            creative_size_id: creative_size_id.clone(),
+                            advertiser_id: advertiser_id.clone(),
+                            content,
+                            creative_size_name: creative_size_name_dsp
+                        };
+                        
+                        positions.push(pos);
                         
                     }
+                    if !positions.is_empty() {
+                        self.save_position(pool, advertiser_id, &positions).await;
+                    }
+                    for p in positions {
+                        if sizes.contains(&p.creative_size_name) {
+                            ret.push(p)
+                        }
+                    }
+
                     Some(ret)
                 } else {
                     None
@@ -207,6 +215,8 @@ impl PromotionService {
             .bind(&info.content)
             .bind(&info.creative_size_name);
         }
+        // let s = query.sql();
+        // println!("sql: {}", s);
         let rs = query.execute(pool).await;
         match rs {
             Ok(v) => {},
