@@ -497,6 +497,7 @@ impl PromotionService {
             }
 
             let creative_id = server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
+            println!("create creative success: {:?}", creative_id);
             // return creative_id;
         }
         // None
@@ -674,8 +675,13 @@ impl PromotionService {
                     let id: i32 = row.get(0);
                     let create_params: String = row.get(1);
                     let vo: Result<ReqReadyAd, serde_json::Error> = serde_json::from_str(create_params.as_str());
-                    if let Ok(vo) = vo {
-                        ret.push((id, vo));
+                    match vo {
+                        Ok(vo) => {
+                            ret.push((id, vo));
+                        },
+                        Err(e) => {
+                            println!("get_ad_create_data err: {}", e);
+                        }
                     }
                 }
                 Some(ret)

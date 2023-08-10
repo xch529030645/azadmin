@@ -545,7 +545,7 @@ pub struct ReqCreativeAssets {
 pub struct ReqCreative {
     pub creative_name: String,
     pub creative_size_subtype: String,
-    pub text: String,
+    pub text: Option<String>,
     pub icons: Option<Vec<ReqCreativeAssets>>,
     pub images: Option<Vec<ReqCreativeAssets>>,
     pub videos: Option<Vec<ReqCreativeAssets>>,
