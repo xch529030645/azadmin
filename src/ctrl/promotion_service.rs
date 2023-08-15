@@ -436,6 +436,7 @@ impl PromotionService {
     }
 
     async fn create_creative(pool: &Pool<MySql>, access_token: &String, adgroup: &ResCreateAdgroupData, param: &ReqReadyAd) {
+        let mut i = 0;
         for creative in &param.creatives {
             let mut icon_asset_id: Option<i64> = None;
             if let Some(icons) = &creative.icons {
@@ -496,8 +497,12 @@ impl PromotionService {
                 }
             }
 
-            let creative_id = server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative.creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
+
+
+            let creative_name = format!("{}-{}", &creative.creative_name, i);
+            let creative_id = server_api::create_creative(access_token, &param.advertiser_id, &adgroup.adgroup_id, &creative_name, &creative.creative_size_subtype, &creative.size, &creative.text, image_ids, icon_asset_id, video_id, &creative.corprate_name).await;
             println!("create creative success: {:?}", creative_id);
+            i = i + 1;
             // return creative_id;
         }
         // None
