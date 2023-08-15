@@ -43,16 +43,18 @@ fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
 
 fn start_timer(server_config: ServerConfig) {
     actix_rt::spawn(async move {
-        let pool = MySqlPoolOptions::new()
-        .max_connections(5)
-        .connect(&get_mysql_connect_url(&server_config))
-        .await.unwrap_or_else(|_| { std::process::exit(0) });
+        
         let game_service = GameService::create();
         // let promotion_service = PromotionService::create();
 
         let mut interval = time::interval(Duration::from_secs(60));
         let mut task_interval_1 = 1;
         loop {
+            let pool = MySqlPoolOptions::new()
+            .max_connections(5)
+            .connect(&get_mysql_connect_url(&server_config))
+            .await.unwrap_or_else(|_| { std::process::exit(0) });
+        
             interval.tick().await;
             task_interval_1 = task_interval_1 - 1;
             if task_interval_1 == 0 {
@@ -72,6 +74,8 @@ fn start_timer(server_config: ServerConfig) {
                 // promotion_controller::fetch_assets(&pool, &promotion_service).await;
                 game_controller::check_package_app_id(&pool, &game_service).await
             }
+
+            pool.close().await;
         }
     });
 }
