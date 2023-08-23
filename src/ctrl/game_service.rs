@@ -1,4 +1,4 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::Sub, sync::{Arc, Mutex}, cmp::min};
+use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::Sub, sync::{Arc, Mutex}, cmp::min, process::Command};
 use chrono::{Local, DateTime, Days, Timelike};
 use sqlx::{Pool, MySql, Row};
 
@@ -831,6 +831,7 @@ impl GameService {
                 //     }
                 // }
                 for date in days {
+                    self.check_memory();
                     // self.calc_release_daily_reports(&pool, &date, &end_date, &mut app_package_names).await;
                     self.calc_advertiser_release_daily_reports(&pool, &date, &end_date).await;
                 }
@@ -1636,6 +1637,29 @@ impl GameService {
                         game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
                     }
                 }
+            }
+        }
+    }
+
+    pub fn check_memory(&self) {
+        let th = Command::new("/usr/bin/sh").arg("/root/azadmin/azadmin/check.sh").spawn();
+        match th {
+            Ok(th) => {
+                let out = th.wait_with_output();
+                match out {
+                    Ok(output) => {
+                        let out = String::from_utf8(output.stdout).unwrap();
+                        println!("{}", out);
+                        // game_repository::execute_daily_task_done(pool, &today, 6).await;
+                    }
+                    Err(e) => {
+                        println!("restart_mysql {}", e);
+                    }
+                }
+                
+            }
+            Err(e) => {
+                println!("restart_mysql {}", e);
             }
         }
     }
