@@ -59,7 +59,7 @@ fn start_timer(server_config: ServerConfig) {
             task_interval_1 = task_interval_1 - 1;
             if task_interval_1 == 0 {
                 task_interval_1 = 5;
-                game_controller::restart_mysql(&pool).await;
+                game_controller::restart_mysql(&pool, &game_service).await;
                 game_controller::check_access_token(&pool, &game_service).await;
                 game_controller::query_campaigns(&pool, &game_service).await;
                 game_controller::query_reports(&pool, &game_service).await;
