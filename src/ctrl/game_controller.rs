@@ -88,6 +88,19 @@ pub async fn save_admin_advertisers(_: UserData, data: web::Data<AppState>, game
     return Results::err(err);
 }
 
+#[post("/azadmin/add_app_group")]
+pub async fn add_app_group(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqAddAppGroup>) -> impl Responder {
+    let err = game_service.add_app_group(&data.pool, user_data.id, &param.0).await;
+    return Results::err(err);
+}
+
+#[post("/azadmin/get_app_group")]
+pub async fn get_app_group(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let list = game_service.get_app_group(&data.pool, user_data.id).await;
+    return Results::done(&list.as_ref());
+}
+
+
 #[post("/azadmin/get_app_gallery")]
 pub async fn get_app_gallery(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let list = game_service.get_app_gallery(&data.pool).await;

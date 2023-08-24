@@ -168,6 +168,10 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::get_admin)
             .service(game_controller::get_admin_advertisers)
             .service(game_controller::save_admin_advertisers)
+            .service(game_controller::add_app_group)
+            .service(game_controller::get_app_group)
+
+
             .service(promotion_controller::create_audience_package)
             .service(promotion_controller::sync_audience_package)
             .service(promotion_controller::get_audience_package)

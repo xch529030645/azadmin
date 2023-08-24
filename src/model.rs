@@ -207,6 +207,13 @@ pub struct AppGallery {
     pub connect_access_token: Option<String>,
 }
 
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct AppGroup {
+    pub id: String,
+    pub name: String,
+    pub app_ids: String
+}
+
 #[derive(sqlx::FromRow, Deserialize, Serialize, Clone)]
 pub struct ReleaseToken {
     pub advertiser_id: String,
@@ -356,6 +363,13 @@ pub struct Admin {
 pub struct ReqSaveAdminAdvertiser {
     pub uid: i32,
     pub advertisers: Vec<String>
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqAddAppGroup {
+    pub id: i32,
+    pub name: String,
+    pub app_ids: String
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]

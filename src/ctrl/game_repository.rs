@@ -1429,3 +1429,59 @@ pub async fn get_campaign_status(pool: &Pool<MySql>, campaign_id: &str) -> Optio
         }
     }
 }
+
+pub async fn add_app_group(pool: &Pool<MySql>, uid: i32, param: &ReqAddAppGroup) -> i32 {
+    if param.id == 0 {
+        let rs = sqlx::query("INSERT INTO azadmin.app_groups
+        (uid, name, app_ids, create_time)
+        VALUES(?, ?, ?, CURRENT_TIMESTAMP);
+        ")
+            .bind(uid)
+            .bind(&param.name)
+            .bind(&param.app_ids)
+            .execute(pool)
+            .await;
+        match rs {
+            Ok(v) => {
+                0
+            },
+            Err(e) => {
+                println!("add_app_group: {}", e);
+                1
+            }
+        }
+    } else {
+        let rs = sqlx::query("UPDATE azadmin.app_groups SET name=?, app_ids=? WHERE id=?")
+            .bind(&param.name)
+            .bind(&param.app_ids)
+            .bind(&param.id)
+            .execute(pool)
+            .await;
+        match rs {
+            Ok(v) => {
+                0
+            },
+            Err(e) => {
+                println!("add_app_group: {}", e);
+                1
+            }
+        }
+    }
+    
+}
+
+pub async fn get_app_group(pool: &Pool<MySql>, uid: i32) -> Option<Vec<AppGroup>> {
+    let rs = sqlx::query_as::<_, AppGroup>("SELECT * FROM app_groups WHERE uid=?")
+        .bind(uid)
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_app_group: {}", e);
+            None
+        }
+    }
+}
