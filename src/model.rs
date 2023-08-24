@@ -209,7 +209,7 @@ pub struct AppGallery {
 
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
 pub struct AppGroup {
-    pub id: String,
+    pub id: i32,
     pub name: String,
     pub app_ids: String
 }
