@@ -1562,8 +1562,8 @@ impl GameService {
                                     };
                                     if stat.cost >= task.min_cost && max_cost_check && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
                                         if task.operation == 1 {
-                                            println!("{} roas {} < {}", &stat.campaign_id, roas, task.require_roas);
-                                                shutdown_ids.push((task, stat));
+                                            println!("id: {}, cost {} >= {}, {} roas {} < {}", &task.id, &stat.cost, &task.min_cost, &stat.campaign_id, roas, task.require_roas);
+                                            shutdown_ids.push((task, stat));
                                         } else if task.operation == 2 {
                                             resume_ids.push((task, stat));
                                         }
