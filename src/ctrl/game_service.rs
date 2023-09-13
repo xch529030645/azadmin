@@ -264,7 +264,7 @@ impl GameService {
         match rs {
             Ok(v) => Some(v),
             Err(e) => {
-                println!("get_reports err {}", e);
+                println!("get_reports err {}", &sql);
                 None
             }
         }
@@ -1560,7 +1560,8 @@ impl GameService {
                                     } else {
                                         true
                                     };
-                                    if stat.cost >= task.min_cost && max_cost_check && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
+                                    
+                                    if stat.cost.ge(&task.min_cost) && max_cost_check && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
                                         if task.operation == 1 {
                                             println!("id: {}, cost {} >= {}, {} roas {} < {}", &task.id, &stat.cost, &task.min_cost, &stat.campaign_id, roas, task.require_roas);
                                             shutdown_ids.push((task, stat));
