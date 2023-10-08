@@ -268,7 +268,7 @@ pub async fn query_ads_reports(pool: &Pool<MySql>, game_service:&GameService) {
     let p = pool.clone();
     actix_rt::spawn(async move {
         let today = Local::now().format("%Y-%m-%d").to_string();
-        game_service.query_ads_reports(pool, &today).await;
+        s.query_ads_reports(&p, &today).await;
     });
 }
 
