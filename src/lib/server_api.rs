@@ -197,7 +197,7 @@ pub async fn query_ads_reports_by_token(access_token: &String, start_date: &Stri
     data.add_filter("currency", "USD");
 
 
-    let rs = client.post("https://ads.cloud.huawei.com/openapi/monetization/reports/v1/publisher").headers(headers).json(&data).send().await;
+    let rs = client.post("https://ads.cloud.huawei.com/openapi/monetization/reports/v1/publisher").headers(headers).json(&data).timeout(std::time::Duration::from_secs(10)).send().await;
     match rs {
         Ok(v) => {
             let txt = v.text().await.unwrap();
