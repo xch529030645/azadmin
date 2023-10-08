@@ -264,8 +264,12 @@ pub async fn query_reports(pool: &Pool<MySql>, game_service: &GameService) {
 }
 
 pub async fn query_ads_reports(pool: &Pool<MySql>, game_service:&GameService) {
-    let today = Local::now().format("%Y-%m-%d").to_string();
-    game_service.query_ads_reports(pool, &today).await;
+    let s = game_service.clone();
+    let p = pool.clone();
+    actix_rt::spawn(async move {
+        let today = Local::now().format("%Y-%m-%d").to_string();
+        game_service.query_ads_reports(pool, &today).await;
+    });
 }
 
 pub async fn query_last_90_release_reports(pool: &Pool<MySql>, game_service:&GameService) {
