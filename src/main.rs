@@ -59,20 +59,30 @@ fn start_timer(server_config: ServerConfig) {
             task_interval_1 = task_interval_1 - 1;
             if task_interval_1 == 0 {
                 task_interval_1 = 5;
-                game_controller::restart_mysql(&pool, &game_service).await;
-                game_controller::check_access_token(&pool, &game_service).await;
-                game_controller::query_campaigns(&pool, &game_service).await;
-                game_controller::query_reports(&pool, &game_service).await;
-                game_controller::query_ads_reports(&pool, &game_service).await;
+                let s = game_service.clone();
+                let p = pool.clone();
+                actix_rt::spawn(async move {
+                    // s.query_reports(&p, &Local::now(), &Local::now()).await;
+                    // s.check_collection_tasks(&p).await;
+
+                    game_controller::restart_mysql(&p, &s).await;
+                    game_controller::check_access_token(&p, &s).await;
+                    game_controller::query_campaigns(&p, &s).await;
+                    game_controller::query_reports(&p, &s).await;
+                    game_controller::query_ads_reports(&p, &s).await;
+                    
+                    game_controller::query_umeng_apps(&p, &s).await;
+                    game_controller::query_last_30_umeng_retentions(&p, &s).await;
+                    game_controller::query_umeng_duration(&p, &s).await;
+
+                    // promotion_controller::fetch_assets(&p, &promotion_service).await;
+                    game_controller::check_package_app_id(&p, &s).await;
+                });
+                
+
+
                 game_controller::query_last_90_day_earning_reports(&pool, &game_service).await;
                 game_controller::query_last_90_release_reports(&pool, &game_service).await;
-
-                game_controller::query_umeng_apps(&pool, &game_service).await;
-                game_controller::query_last_30_umeng_retentions(&pool, &game_service).await;
-                game_controller::query_umeng_duration(&pool, &game_service).await;
-
-                // promotion_controller::fetch_assets(&pool, &promotion_service).await;
-                game_controller::check_package_app_id(&pool, &game_service).await
             }
 
         }
