@@ -102,6 +102,10 @@ impl GameService {
     pub async fn get_app_group(&self, pool: &Pool<MySql>, uid: i32) -> Option<Vec<AppGroup>> {
         game_repository::get_app_group(pool, uid).await
     }
+
+    pub async fn delete_app_group(&self, pool: &Pool<MySql>, id: i32) -> i32 {
+        game_repository::delete_app_group(pool, id).await
+    }
     
     pub async fn get_app_gallery(&self, pool: &Pool<MySql>) -> Option<Vec<AppGallery>> {
         let rs = sqlx::query_as::<_, AppGallery>("SELECT * FROM ads_account")

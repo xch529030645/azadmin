@@ -100,6 +100,13 @@ pub async fn get_app_group(user_data: UserData, data: web::Data<AppState>, game_
     return Results::done(&list.as_ref());
 }
 
+#[post("/azadmin/delete_app_group")]
+pub async fn delete_app_group(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqDelCollection>) -> impl Responder {
+    let err = game_service.delete_app_group(&data.pool, param.0.id).await;
+    return Results::err(err);
+}
+
+
 
 #[post("/azadmin/get_app_gallery")]
 pub async fn get_app_gallery(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
