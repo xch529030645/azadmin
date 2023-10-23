@@ -1485,3 +1485,19 @@ pub async fn get_app_group(pool: &Pool<MySql>, uid: i32) -> Option<Vec<AppGroup>
         }
     }
 }
+
+pub async fn delete_app_group(pool: &Pool<MySql>, id: i32) -> i32 {
+    let rs = sqlx::query("DELETE FROM app_groups WHERE id=?")
+        .bind(id)
+        .execute(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            0
+        },
+        Err(e) => {
+            println!("delete_app_group: {}", e);
+            1
+        }
+    }
+}
