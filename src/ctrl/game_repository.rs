@@ -71,6 +71,12 @@ pub async fn set_umkey(pool: &Pool<MySql>, param: &ReqBindUmKey) -> i32 {
             .execute(pool).await;
         match rs {
             Ok(v) => {
+                if v.rows_affected() == 0 {
+                    sqlx::query("UPDATE um_apps SET appkey=? WHERE package_name=? LIMIT 1")
+                        .bind(&param.appkey)
+                        .bind(&package_name)
+                        .execute(pool).await;
+                }
                 0
             },
             Err(e) => {
