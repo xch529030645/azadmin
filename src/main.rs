@@ -38,7 +38,7 @@ pub struct AppState {
 
 fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
     return format!("mysql://{}:{}@{}:{}/azadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useOldAliasMetadataBehavior=true",
-                "root",server_config.password,server_config.host,server_config.port);
+                server_config.user,server_config.password,server_config.host,server_config.port);
 }
 
 fn start_timer(server_config: ServerConfig) {

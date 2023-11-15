@@ -10,6 +10,7 @@ use actix_multipart::form::{tempfile::TempFile, MultipartForm};
 
 #[derive(Serialize,Deserialize,Clone)]
 pub struct ServerConfig {
+    pub user: String,
     pub password: String,
     pub host: String,
     pub port: i32,

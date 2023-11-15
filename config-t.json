@@ -1,0 +1,7 @@
+{
+    "host": "rm-bp13pj1ra23v633vw.mysql.rds.aliyuncs.com",
+    "port": 3306,
+    "user": "game",
+    "password": "hZ141M8HV0ne7Iu",
+    "profiles": "prod"
+}

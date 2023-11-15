@@ -65,17 +65,30 @@ pub async fn get_package_name_by_app_id(pool: &Pool<MySql>, app_id: &String) -> 
 pub async fn set_umkey(pool: &Pool<MySql>, param: &ReqBindUmKey) -> i32 {
     let package_name = get_package_name_by_app_id(pool, &param.app_id).await;
     if let Some(package_name) = package_name {
-        let rs = sqlx::query("UPDATE um_apps SET package_name=? WHERE appkey=?")
+        let mut rs = sqlx::query("UPDATE um_apps SET package_name=? WHERE appkey=?")
             .bind(&package_name)
             .bind(&param.appkey)
             .execute(pool).await;
         match rs {
             Ok(v) => {
                 if v.rows_affected() == 0 {
-                    sqlx::query("UPDATE um_apps SET appkey=? WHERE package_name=? LIMIT 1")
+                    rs = sqlx::query("UPDATE um_apps SET appkey=? WHERE package_name=? LIMIT 1")
                         .bind(&param.appkey)
                         .bind(&package_name)
                         .execute(pool).await;
+                    match rs {
+                        Ok(v) => {
+                            // if v.rows_affected() == 0 {
+                            //     sqlx::query("INSERT INTO um_apps (appkey, package_name)")
+                            //         .bind(&param.appkey)
+                            //         .bind(&package_name)
+                            //         .execute(pool).await;
+                            // }
+                        },
+                        Err(e) => {
+                            println!("set_umkey err 2: {}", e);
+                        }
+                    }
                 }
                 0
             },
