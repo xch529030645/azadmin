@@ -1467,10 +1467,14 @@ impl GameService {
             let rs = game_repository::get_umeng_app_without_duration(pool).await;
             if let Some(rs) = rs {
                 for app in rs {
-                    let rs = umeng_api::get_duration(&app.appkey, &app.date).await;
-                    if let Some(rs) = rs {
-                        game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+                    let um_key = game_repository::get_umkey_by_appkey(pool, &app.appkey).await;
+                    if let Some(um_key) = um_key {
+                        let rs = umeng_api::get_duration(&app.appkey, &um_key, &app.date).await;
+                        if let Some(rs) = rs {
+                            game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+                        }
                     }
+                    
                 }
             }
             println!("query_umeng_duration use {}", self.timestamp() - now);
