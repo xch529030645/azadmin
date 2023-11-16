@@ -83,9 +83,9 @@ pub async fn get_retentions(appkey: &str, um_key: &UmKey, from_date: &str, end_d
 pub async fn get_duration(appkey: &str, um_key: &UmKey, date: &str) -> Option<ResUseDuration> {
     let appid = &um_key.appid;
     let client = reqwest::Client::new();
-    let sign_str = format!("param2/1/com.umeng.uapp/umeng.uapp.getDurations/{}appkey{}date{}statTypedaily", UM_APPID, appkey, date);
+    let sign_str = format!("param2/1/com.umeng.uapp/umeng.uapp.getDurations/{}appkey{}date{}statTypedaily", appid, appkey, date);
     let _aop_signature = sign(sign_str.as_str(), &um_key.appkey);
-    let url = format!("https://gateway.open.umeng.com/openapi/param2/1/com.umeng.uapp/umeng.uapp.getDurations/{}?date={}&statType=daily&appkey={}&_aop_signature={}", UM_APPID, date, appkey, _aop_signature);
+    let url = format!("https://gateway.open.umeng.com/openapi/param2/1/com.umeng.uapp/umeng.uapp.getDurations/{}?date={}&statType=daily&appkey={}&_aop_signature={}", appid, date, appkey, _aop_signature);
     let rs = client.get(url).send().await;
     match rs {
         Ok(v) => {
