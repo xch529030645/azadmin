@@ -1385,26 +1385,33 @@ impl GameService {
     }
 
     pub async fn query_umeng_apps(&self, pool: &Pool<MySql>) {
-        let mut page = 1;
-        let mut apps: Vec<UMApp> = vec![];
-        loop {
-            let rs = umeng_api::get_app_list(page).await;
-            if let Some(mut rs) = rs {
-                apps.append(&mut rs.appInfos);
-                if page < rs.totalPage {
-                    page = page + 1;
-                } else {
-                    break
+        let now = self.timestamp();
+
+        let umkeys = game_repository::get_um_keys(pool).await;
+        if let Some(umkeys) = umkeys {
+            for um_key in umkeys {
+                let mut page = 1;
+                let mut apps: Vec<UMApp> = vec![];
+                loop {
+                    let rs = umeng_api::get_app_list(page, &um_key).await;
+                    if let Some(mut rs) = rs {
+                        apps.append(&mut rs.appInfos);
+                        if page < rs.totalPage {
+                            page = page + 1;
+                        } else {
+                            break
+                        }
+                    } else {
+                        break
+                    }
                 }
-            } else {
-                break
+
+                for app in apps {
+                    game_repository::save_um_apps(pool, &app.appkey, &app.name, &um_key).await;
+                }
             }
         }
-
-        let now = self.timestamp();
-        for app in apps {
-            game_repository::save_um_apps(pool, &app.appkey, &app.name).await;
-        }
+        
         println!("insert_umeng_apps use {}", self.timestamp() - now);
     }
 
@@ -1423,14 +1430,17 @@ impl GameService {
             let apps = game_repository::get_um_apps_with_package_name(pool).await;
             if let Some(apps) = apps {
                 for app in apps {
-                    let rs = umeng_api::get_retentions(&app.appkey, start_date, end_date).await;
-                    if let Some(info_list) = rs {
-                        game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
-                    }
+                    let um_key = game_repository::get_umkey_by_appkey(pool, &app.appkey).await;
+                    if let Some(um_key) = um_key {
+                        let rs = umeng_api::get_retentions(&app.appkey, &um_key, start_date, end_date).await;
+                        if let Some(info_list) = rs {
+                            game_repository::save_app_umeng_retention(pool, &app.appkey, &info_list.retentionInfo).await;
+                        }
 
-                    let rs = umeng_api::get_duration(&app.appkey, end_date).await;
-                    if let Some(rs) = rs {
-                        game_repository::save_app_umeng_duration(pool, &app.appkey, end_date, rs.average).await;
+                        let rs = umeng_api::get_duration(&app.appkey, &um_key, end_date).await;
+                        if let Some(rs) = rs {
+                            game_repository::save_app_umeng_duration(pool, &app.appkey, end_date, rs.average).await;
+                        }
                     }
                 }
             }

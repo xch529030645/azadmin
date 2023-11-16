@@ -656,6 +656,12 @@ pub struct AdsCreated {
 }
 
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct UmKey {
+    pub id: i32,
+    pub appid: String,
+    pub appkey: String,
+}
 
 
 #[derive(Deserialize, Serialize)]

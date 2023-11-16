@@ -573,10 +573,11 @@ pub async fn remove_unknown_package_name(pool: &Pool<MySql>, package_name: &str)
     }
 }
 
-pub async fn save_um_apps(pool: &Pool<MySql>, appkey: &str, name: &str) {
-    let rs = sqlx::query("INSERT INTO um_apps (appkey, `name`) VALUES (?,?) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`)")
+pub async fn save_um_apps(pool: &Pool<MySql>, appkey: &str, name: &str, um_key: &UmKey) {
+    let rs = sqlx::query("INSERT INTO um_apps (appkey, `name`, key_id) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`)")
         .bind(appkey)
         .bind(name)
+        .bind(um_key.id)
         .execute(pool)
         .await;
     match rs {
@@ -1520,3 +1521,35 @@ pub async fn delete_app_group(pool: &Pool<MySql>, id: i32) -> i32 {
         }
     }
 }
+
+pub async fn get_um_keys(pool: &Pool<MySql>) -> Option<Vec<UmKey>> {
+    let rs = sqlx::query_as::<_, UmKey>("SELECT * FROM um_keys")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_um_keys err: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_umkey_by_appkey(pool: &Pool<MySql>, appkey: &str) -> Option<UmKey> {
+    let rs = sqlx::query_as::<_, UmKey>("SELECT b.* FROM um_apps a LEFT JOIN um_keys b ON a.key_id = b.id WHERE a.appkey = ?")
+        .bind(appkey)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_umkey_by_appkey err: {}", e);
+            None
+        }
+    }
+}
+
