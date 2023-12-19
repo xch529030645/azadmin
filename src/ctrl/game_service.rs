@@ -267,7 +267,7 @@ impl GameService {
         LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
         ON t.app_id = t2.app_id
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
-        println!("query_release_reports {}", &sql);
+        // println!("query_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
         .fetch_all(pool)

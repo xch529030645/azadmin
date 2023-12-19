@@ -111,7 +111,7 @@ pub async fn get_today_yesterday_data(appkey: &str, um_key: &UmKey) -> Option<Re
     let client = reqwest::Client::new();
     let sign_str = format!("param2/1/com.umeng.uapp/umeng.uapp.getTodayYesterdayData/{}appkey{}", appid, appkey);
     let _aop_signature = sign(sign_str.as_str(), &um_key.appkey);
-    let url = format!("https://gateway.open.umeng.com/openapi/param2/1/com.umeng.uapp/umeng.uapp.getTodayYesterdayData/{}?statType=daily&appkey={}&_aop_signature={}", appid, appkey, _aop_signature);
+    let url = format!("https://gateway.open.umeng.com/openapi/param2/1/com.umeng.uapp/umeng.uapp.getTodayYesterdayData/{}?appkey={}&_aop_signature={}", appid, appkey, _aop_signature);
     let rs = client.get(url).send().await;
     match rs {
         Ok(v) => {
