@@ -361,8 +361,7 @@ pub struct ResUmDailyData {
     pub activityUsers: i32,
     pub totalUsers: i32,
     pub launches: i32,
-    pub newUsers: i32,
-    pub payUsers: i32
+    pub newUsers: i32
 }
 
 
