@@ -162,14 +162,20 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 // fs::write("/Volumes/MacintoshHD/Work/Rust/azadmin/res.txt", txt);
                 // // println!("query_reports res {:?}", v.text().await.unwrap());
                 // None
-                let at = v.json::<ResReports>().await;
-                match at {
-                    Ok(at) => {
-                        ret = Some(at);
-                        break;
+                let rs = v.text().await;
+                // let at = v.json::<ResReports>().await;
+                match rs {
+                    Ok(text) => {
+                        let at: Result<ResReports, serde_json::Error> = serde_json::from_str(&text);
+                        if let Ok(at) = at {
+                            ret = Some(at);
+                            break;
+                        } else {
+                            println!("query_reports json err: {}", &text);
+                        }
                     },
                     Err(e) => {
-                        println!("query_reports json err: {}", e);
+                        println!("query_reports text err: {}", e);
                     }
                 }
             },
