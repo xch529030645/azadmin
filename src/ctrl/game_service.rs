@@ -949,7 +949,7 @@ impl GameService {
             Some(v) => v.page,
             None => 1
         };
-        println!("query_advertiser_reports page {}", page);
+        println!("query_advertiser_reports page {} {}", advertiser_id, page);
         let access_token = game_repository::get_marketing_access_token(pool, &advertiser_id).await;
         if let Some(access_token) = &access_token {
             let rs = server_api::query_reports(&advertiser_id, access_token, &start_date, &end_date, page, page_size).await;
@@ -980,7 +980,7 @@ impl GameService {
                             for list in data_list {
                                 game_repository::save_marketing_reports(pool, &advertiser_id, &list).await;
                             }
-                            println!("query_advertiser_reports use {}", self.timestamp() - now);
+                            println!("query_advertiser_reports {} use {}", advertiser_id, self.timestamp() - now);
                         }
                         
 
@@ -1176,6 +1176,7 @@ impl GameService {
                     (id,app_id,stat_datetime,click_through_rate,ad_type,click_count,placement_id,reached_ad_requests,ad_requests_match_rate,app_name,earnings,ad_requests_show_rate,placement_name,matched_reached_ad_requests,show_count)
                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON DUPLICATE KEY UPDATE 
+                    reached_ad_requests=VALUES(reached_ad_requests),
                     click_through_rate=VALUES(click_through_rate),
                     click_count=VALUES(click_count),
                     ad_requests_match_rate=VALUES(ad_requests_match_rate),
