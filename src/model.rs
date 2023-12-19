@@ -250,6 +250,7 @@ pub struct AdsDailyReport {
     pub app_id: String,
     pub stat_datetime: String,
     pub earnings: f64,
+    pub reached_ad_requests: i32,
     pub click_count: i32,
     pub matched_reached_ad_requests: i32,
     pub show_count: i32,
