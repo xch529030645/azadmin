@@ -10,9 +10,9 @@ use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api},
 use super::game_repository;
 // use async_recursion::async_recursion;
 
-const CLIENT_ID: &str = "108128867";
-const CLIENT_SECRET: &str = "9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54";
-const REDIRECT_URL: &str = "https://dat.311419.cn/azadmin/auth";
+// const CLIENT_ID: &str = "108128867";
+// const CLIENT_SECRET: &str = "9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54";
+// const REDIRECT_URL: &str = "https://dat.311419.cn/azadmin/auth";
 
 #[derive(Clone)]
 pub struct PromotionService {

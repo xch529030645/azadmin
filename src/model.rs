@@ -95,7 +95,8 @@ pub struct ReqRoas {
     pub package_name: String,
     pub start_date: String,
     pub end_date: String,
-    pub country: Option<String>
+    pub country: Option<String>,
+    pub advertiser_ids: Option<String>,
 }
 
 #[derive(Serialize,Deserialize)]
@@ -267,6 +268,7 @@ pub struct AdsDailyReleaseReportAdv {
     pub stat_datetime: String,
     pub cost: f64,
     pub active: i32,
+    pub install_count: i32,
     pub iaa: f64,
     pub country: String,
     pub advertiser_id: String
@@ -342,6 +344,26 @@ pub struct UMRetentionApp {
     pub appkey: String,
     pub date: String,
 }
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResUmDailyData {
+    pub date: String,
+    pub activityUsers: i32,
+    pub totalUsers: i32,
+    pub launches: i32,
+    pub newUsers: i32,
+    pub payUsers: i32
+}
+
+
+
+#[derive(Deserialize, Serialize)]
+pub struct ResAppTodayYesterdayData {
+    pub todayData: ResUmDailyData,
+    pub yesterdayData: ResUmDailyData
+}
+
 
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]

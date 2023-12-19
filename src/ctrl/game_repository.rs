@@ -155,7 +155,7 @@ pub async fn calc_ads_daily_release_reports_by_date(pool: &Pool<MySql>, date: &S
 }
 
 pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &Pool<MySql>, date: &String) -> Option<Vec<AdsDailyReleaseReportAdv>> {
-    let rs = sqlx::query_as::<_, AdsDailyReleaseReportAdv>("SELECT SUM(cost) as cost, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country, advertiser_id FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country, advertiser_id")
+    let rs = sqlx::query_as::<_, AdsDailyReleaseReportAdv>("SELECT SUM(cost) as cost, CAST(SUM(install_count) as SIGNED) as install_count, CAST(SUM(active_count) as SIGNED) as active, SUM(attribution_income_iaa) as iaa, package_name, stat_datetime, country, advertiser_id FROM reports WHERE stat_datetime = ? GROUP BY package_name, stat_datetime, country, advertiser_id")
     .bind(&date)
     .fetch_all(pool).await;
     match rs {
@@ -313,11 +313,17 @@ pub async fn get_app_roas(pool: &Pool<MySql>, param: &ReqRoas) -> Option<Vec<Ads
         "ALL"
     };
 
+    let adv_cond = if let Some(advertiser_ids) = &param.advertiser_ids {
+        format!(" AND FIND_IN_SET(advertiser_id, '{}')", advertiser_ids)
+    } else {
+        "".to_string()
+    };
+
     let sql = format!("SELECT a.package_name, SUM(a.cost) as cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) as iaa, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, DATE_FORMAT(a.record_datetime, '%Y-%m-%d') as record_datetime, b.earnings FROM ads_advertiser_daily_release_reports a 
     LEFT JOIN apps c ON a.package_name = c.package_name 
     LEFT JOIN ads_daily_earnings_reports b ON a.stat_datetime=b.stat_datetime AND b.app_id = c.app_id 
-    WHERE a.package_name=? AND a.country=? AND a.stat_datetime BETWEEN ? AND ?
-    GROUP BY a.package_name, a.stat_datetime, a.record_datetime, b.earnings");
+    WHERE a.package_name=? AND a.country=? AND a.stat_datetime BETWEEN ? AND ? {}
+    GROUP BY a.package_name, a.stat_datetime, a.record_datetime, b.earnings", adv_cond);
 
     // println!("{}", sql);
 
@@ -869,12 +875,12 @@ pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, d
         return;
     }
     let mut sql = "INSERT INTO azadmin.ads_advertiser_daily_release_reports
-    (advertiser_id, package_name, cost, active, iaa, stat_datetime, record_datetime, country)
+    (advertiser_id, package_name, cost, active, install_count, iaa, stat_datetime, record_datetime, country)
     VALUES ".to_string();
 
     let mut placeholder: Vec<&str> = vec![];
     for _ in data_list {
-        placeholder.push("(?, ?, ?, ?, ?, ?, ?, ?)");
+        placeholder.push("(?, ?, ?, ?, ?, ?, ?, ?, ?)");
     }
 
     sql += placeholder.join(",").as_str();
@@ -888,6 +894,7 @@ pub async fn save_daily_release_report_group_by_advertiser(pool: &Pool<MySql>, d
         .bind(&vo.package_name)
         .bind(&vo.cost)
         .bind(&vo.active)
+        .bind(&vo.install_count)
         .bind(&vo.iaa)
         .bind(&vo.stat_datetime)
         .bind(&record_date)
@@ -1549,6 +1556,36 @@ pub async fn get_umkey_by_appkey(pool: &Pool<MySql>, appkey: &str) -> Option<UmK
         Err(e) => {
             println!("get_umkey_by_appkey err: {}", e);
             None
+        }
+    }
+}
+
+pub async fn save_umeng_today_yesterday_data(pool: &Pool<MySql>, appkey: &str, rs: &ResAppTodayYesterdayData) {
+    let rs = sqlx::query("INSERT INTO um_app_daily_data
+    (appkey, `date`, activityUsers, totalUsers, launches, newUsers)
+    VALUES(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
+    activityUsers=VALUES(activityUsers), totalUsers=VALUES(totalUsers), launches=VALUES(launches), newUsers=VALUES(newUsers);")
+        .bind(appkey)
+        .bind(&rs.todayData.date)
+        .bind(&rs.todayData.activityUsers)
+        .bind(&rs.todayData.totalUsers)
+        .bind(&rs.todayData.launches)
+        .bind(&rs.todayData.newUsers)
+
+        .bind(appkey)
+        .bind(&rs.yesterdayData.date)
+        .bind(&rs.yesterdayData.activityUsers)
+        .bind(&rs.yesterdayData.totalUsers)
+        .bind(&rs.yesterdayData.launches)
+        .bind(&rs.yesterdayData.newUsers)
+        .fetch_one(pool)
+        .await;
+    match rs {
+        Ok(v) => {
+            
+        },
+        Err(e) => {
+            println!("save_umeng_today_yesterday_data err: {}", e);
         }
     }
 }

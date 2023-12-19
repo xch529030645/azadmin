@@ -7,13 +7,16 @@ use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api},
 use super::game_repository;
 // use async_recursion::async_recursion;
 
-const CLIENT_ID: &str = "108128867";
-const CLIENT_SECRET: &str = "9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54";
-const REDIRECT_URL: &str = "https://dat.311419.cn/azadmin/auth";
+// const CLIENT_ID: &str = "108128867";
+// const CLIENT_SECRET: &str = "9fae7c0bf88cd122d3fc87d1709fba4326d1f157a5d82a6aa1b4cf7123c09d54";
+// const REDIRECT_URL: &str = "https://dat.311419.cn/azadmin/auth";
 
-// const CLIENT_ID: &str = "109604305";
-// const CLIENT_SECRET: &str = "290c257d157eb1a8381833afb178d561affcf13c50daa9d6b4aad267bed630db";
-// const REDIRECT_URL: &str = "https://data.91mgame.com/azadmin/auth";
+
+const CLIENT_ID: &str = "109604305";
+const CLIENT_SECRET: &str = "290c257d157eb1a8381833afb178d561affcf13c50daa9d6b4aad267bed630db";
+const REDIRECT_URL: &str = "https://data.91mgame.com/azadmin/auth";
+
+
 
 #[derive(Clone)]
 pub struct GameService {
@@ -1472,6 +1475,11 @@ impl GameService {
                         let rs = umeng_api::get_duration(&app.appkey, &um_key, &app.date).await;
                         if let Some(rs) = rs {
                             game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
+                        }
+
+                        let rs = umeng_api::get_today_yesterday_data(&app.appkey, &um_key).await;
+                        if let Some(rs) = rs {
+                            game_repository::save_umeng_today_yesterday_data(pool, &app.appkey, &rs).await;
                         }
                     }
                     

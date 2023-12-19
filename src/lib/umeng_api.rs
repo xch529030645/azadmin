@@ -5,7 +5,7 @@ use crypto::mac::Mac;
 
 use crypto::sha1::Sha1;
 
-use crate::model::{ResUMAppList, ResRetentionInfo, ResUseDuration, UmKey};
+use crate::model::{ResUMAppList, ResRetentionInfo, ResUseDuration, UmKey, ResAppTodayYesterdayData};
 
 // const UM_KEY: &[u8] = b"iRbRCprXQJ";
 // const UM_APPID: &str = "7327107";
@@ -101,6 +101,32 @@ pub async fn get_duration(appkey: &str, um_key: &UmKey, date: &str) -> Option<Re
         },
         Err(e) => {
             println!("get_duration err: {}", e);
+            None
+        }
+    }
+}
+
+pub async fn get_today_yesterday_data(appkey: &str, um_key: &UmKey) -> Option<ResAppTodayYesterdayData> {
+    let appid = &um_key.appid;
+    let client = reqwest::Client::new();
+    let sign_str = format!("param2/1/com.umeng.uapp/umeng.uapp.getTodayYesterdayData/{}appkey{}", appid, appkey);
+    let _aop_signature = sign(sign_str.as_str(), &um_key.appkey);
+    let url = format!("https://gateway.open.umeng.com/openapi/param2/1/com.umeng.uapp/umeng.uapp.getTodayYesterdayData/{}?statType=daily&appkey={}&_aop_signature={}", appid, appkey, _aop_signature);
+    let rs = client.get(url).send().await;
+    match rs {
+        Ok(v) => {
+            let txt = v.text().await.unwrap();
+            let at = serde_json::from_str(&txt);
+            match at {
+                Ok(at) => Some(at),
+                Err(e) => {
+                    println!("get_today_yesterday_data err2: {}", &txt);
+                    None
+                }
+            }
+        },
+        Err(e) => {
+            println!("get_today_yesterday_data err: {}", e);
             None
         }
     }
