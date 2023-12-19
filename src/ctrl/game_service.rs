@@ -1173,8 +1173,8 @@ impl GameService {
                     apps.insert(vo.app_id.clone(), vo.app_name.clone());
                     let id = "".to_string() + &vo.app_id + "-" + &vo.stat_datetime.as_str() +"-"+&vo.placement_id;
                     let rs = sqlx::query("INSERT INTO azadmin.ads_earnings
-                    (id,app_id,stat_datetime,click_through_rate,ad_type,click_count,placement_id,ad_requests_match_rate,app_name,earnings,ad_requests_show_rate,placement_name,matched_reached_ad_requests,show_count)
-                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    (id,app_id,stat_datetime,click_through_rate,ad_type,click_count,placement_id,reached_ad_requests,ad_requests_match_rate,app_name,earnings,ad_requests_show_rate,placement_name,matched_reached_ad_requests,show_count)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON DUPLICATE KEY UPDATE 
                     click_through_rate=VALUES(click_through_rate),
                     click_count=VALUES(click_count),
@@ -1190,6 +1190,7 @@ impl GameService {
                         .bind(&vo.ad_type)
                         .bind(&vo.click_count)
                         .bind(&vo.placement_id)
+                        .bind(&vo.reached_ad_requests)
                         .bind(&vo.ad_requests_match_rate)
                         .bind(&vo.app_name)
                         .bind(&vo.earnings)
