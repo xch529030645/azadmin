@@ -171,7 +171,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                             ret = Some(at);
                             break;
                         } else {
-                            println!("query_reports json err: {}", &text);
+                            println!("query_reports json err An error occurred.");
                         }
                     },
                     Err(e) => {
