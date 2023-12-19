@@ -348,6 +348,11 @@ pub struct UMRetentionApp {
     pub date: String,
 }
 
+#[derive(sqlx::FromRow, Deserialize, Serialize)]
+pub struct UMAppKey {
+    pub appkey: String
+}
+
 
 #[derive(Deserialize, Serialize)]
 pub struct ResUmDailyData {

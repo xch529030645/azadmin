@@ -685,6 +685,20 @@ pub async fn get_umeng_app_without_duration(pool: &Pool<MySql>) -> Option<Vec<UM
     }
 }
 
+
+pub async fn get_umeng_apps(pool: &Pool<MySql>) -> Option<Vec<UMAppKey>> {
+    let rs = sqlx::query_as::<_, UMAppKey>("SELECT appkey FROM um_apps")
+        .fetch_all(pool)
+        .await;
+    match rs {
+        Ok(e) => Some(e),
+        Err(e) => {
+            println!("get_umeng_apps err {}", e);
+            None
+        }
+    }
+}
+
 pub async fn is_daily_task_executed(pool: &Pool<MySql>, today: &String, task_type: i32) -> bool {
     let rs = sqlx::query("SELECT 1 FROM task_daily_records WHERE `date`=? AND task_type=?")
         .bind(today)
@@ -1562,8 +1576,6 @@ pub async fn get_umkey_by_appkey(pool: &Pool<MySql>, appkey: &str) -> Option<UmK
 }
 
 pub async fn save_umeng_today_yesterday_data(pool: &Pool<MySql>, appkey: &str, rs: &ResAppTodayYesterdayData) {
-    println!("save_umeng_today_yesterday_data");
-
     let rs = sqlx::query("INSERT INTO um_app_daily_data
     (appkey, `date`, activityUsers, totalUsers, launches, newUsers)
     VALUES(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 

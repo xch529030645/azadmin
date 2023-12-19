@@ -1478,16 +1478,34 @@ impl GameService {
                             game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
                         }
 
-                        println!("get_today_yesterday_data");
-                        let rs = umeng_api::get_today_yesterday_data(&app.appkey, &um_key).await;
-                        if let Some(rs) = rs {
-                            game_repository::save_umeng_today_yesterday_data(pool, &app.appkey, &rs).await;
-                        }
+                        // println!("get_today_yesterday_data");
+                        // let rs = umeng_api::get_today_yesterday_data(&app.appkey, &um_key).await;
+                        // if let Some(rs) = rs {
+                        //     game_repository::save_umeng_today_yesterday_data(pool, &app.appkey, &rs).await;
+                        // } 
                     }
                     
                 }
             }
+
             println!("query_umeng_duration use {}", self.timestamp() - now);
+
+            let now = self.timestamp();
+            let rs = game_repository::get_umeng_apps(pool).await;
+            if let Some(rs) = rs {
+                for app in rs {
+                    let um_key = game_repository::get_umkey_by_appkey(pool, &app.appkey).await;
+                    if let Some(um_key) = um_key {
+                        let rs = umeng_api::get_today_yesterday_data(&app.appkey, &um_key).await;
+                        if let Some(rs) = rs {
+                            game_repository::save_umeng_today_yesterday_data(pool, &app.appkey, &rs).await;
+                        } 
+                    }
+                    
+                }
+            }
+            println!("get_today_yesterday_data use {}", self.timestamp() - now);
+
 
         //     game_repository::execute_daily_task_done(pool, &today, 4).await;
         // }
