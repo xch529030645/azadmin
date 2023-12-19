@@ -1478,6 +1478,7 @@ impl GameService {
                             game_repository::save_app_umeng_duration(pool, &app.appkey, &app.date, rs.average).await;
                         }
 
+                        println!("get_today_yesterday_data");
                         let rs = umeng_api::get_today_yesterday_data(&app.appkey, &um_key).await;
                         if let Some(rs) = rs {
                             game_repository::save_umeng_today_yesterday_data(pool, &app.appkey, &rs).await;

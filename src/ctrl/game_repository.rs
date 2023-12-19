@@ -1562,6 +1562,8 @@ pub async fn get_umkey_by_appkey(pool: &Pool<MySql>, appkey: &str) -> Option<UmK
 }
 
 pub async fn save_umeng_today_yesterday_data(pool: &Pool<MySql>, appkey: &str, rs: &ResAppTodayYesterdayData) {
+    println!("save_umeng_today_yesterday_data");
+
     let rs = sqlx::query("INSERT INTO um_app_daily_data
     (appkey, `date`, activityUsers, totalUsers, launches, newUsers)
     VALUES(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
