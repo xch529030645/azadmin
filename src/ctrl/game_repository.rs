@@ -173,6 +173,7 @@ pub async fn calc_ads_daily_release_reports_group_by_advertiser_by_date(pool: &P
                         stat_datetime: item.stat_datetime.clone(),
                         cost: item.cost,
                         active: item.active,
+                        install_count: item.install_count,
                         iaa: item.iaa,
                         country: String::from("ALL"),
                         advertiser_id: item.advertiser_id.clone()
