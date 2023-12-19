@@ -1593,7 +1593,7 @@ pub async fn save_umeng_today_yesterday_data(pool: &Pool<MySql>, appkey: &str, r
         .bind(&rs.yesterdayData.totalUsers)
         .bind(&rs.yesterdayData.launches)
         .bind(&rs.yesterdayData.newUsers)
-        .fetch_one(pool)
+        .execute(pool)
         .await;
     match rs {
         Ok(v) => {
