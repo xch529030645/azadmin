@@ -1242,7 +1242,7 @@ impl GameService {
     }
 
     async fn calc_ads_daily_reports(&self, pool: &Pool<MySql>, date: &String) {
-        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, SUM(earnings) as earnings from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime;")
+        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, SUM(earnings) as earnings, CAST(SUM(click_count) AS SIGNED) as click_count from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime;")
             .bind(&date)
             .fetch_all(pool).await;
         match rs {
