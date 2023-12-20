@@ -351,7 +351,7 @@ impl GameService {
         };
 
         if let Some(list) = list {
-            Some(ResGetReports {
+            Some(ResGameGetReports {
                 list, total_number: count
             })
         } else {
@@ -460,7 +460,7 @@ impl GameService {
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), query_date, order_prop, order, params.page * params.len, params.len).as_str();
         println!("query_game_release_reports {}", &sql);
 
-        let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
+        let rs = sqlx::query_as::<_, ResAdsGameReports>(sql.as_str())
         .fetch_all(pool)
         .await;
         match rs {

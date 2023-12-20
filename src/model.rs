@@ -171,6 +171,12 @@ pub struct ResAdsGameReports {
 
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct ResGameGetReports {
+    pub list: Vec<ResAdsGameReports>,
+    pub total_number: i32,
+}
+
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResAdsReportsCount {
     pub count: i32
