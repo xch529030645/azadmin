@@ -198,7 +198,7 @@ impl GameService {
         };
         let mut sql = format!(
         "
-        SELECT t.*, t2.earnings FROM (SELECT b.app_id, a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
+        SELECT t.*, t2.*, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {}
@@ -217,7 +217,7 @@ impl GameService {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
         let mut group_by = [
-            "a.package_name", "b.app_name", "g.remark", "b.app_id"
+            "a.package_name", "b.app_name", "g.remark", "b.app_id", "e.appkey"
         ].to_vec();
         if params.group_by_country {
             group_by.push("a.country");
@@ -256,17 +256,24 @@ impl GameService {
 
 
         let mut earngin_conds = vec![];
-        if let Some(start_date) = &params.start_date {
+        let today = Local::now().format("%Y-%m-%d").to_string();
+        let query_date = if let Some(start_date) = &params.start_date {
             earngin_conds.push(format!("stat_datetime>='{}'", start_date));
-        }
+            start_date
+        } else {
+            &today
+        };
         if let Some(end_date) = &params.end_date {
             earngin_conds.push(format!("stat_datetime<='{}'", end_date));
         }
 
+        // let query_date = &params.start_date.unwrap_or(Local::now().format("%Y-%m-%d").to_string());
+
         sql += format!(") t 
-        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
+        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id, SUM(reached_ad_requests) as reached_ad_requests, SUM(click_count) as click_count, SUM(matched_reached_ad_requests) as matched_reached_ad_requests, SUM(show_count) as show_count FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
         ON t.app_id = t2.app_id
-        ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
+        left join um_app_daily_data uadd on t.appkey=uadd.appkey and {}=uadd.`date`
+        ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), query_date, order_prop, order, params.page * params.len, params.len).as_str();
         // println!("query_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
@@ -282,6 +289,45 @@ impl GameService {
     }
 
     pub async fn get_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
+        let conds = self.get_report_query_conds(params);
+        let list = self.query_release_reports(pool, params, &conds).await;
+
+        // let table = if let Some(advertisers) = &params.advertisers {
+        //     if advertisers.is_empty() {
+        //         "ads_daily_release_reports"
+        //     } else {
+        //         "ads_advertiser_daily_release_reports"
+        //     }
+        // } else {
+        //     "ads_daily_release_reports"
+        // };
+        let table = "ads_advertiser_daily_release_reports";
+        
+        let mut sql = format!("SELECT COUNT(*) AS `count` FROM {} a", table);
+        if !conds.is_empty() {
+            sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
+        }
+        let count_rs = sqlx::query_as::<_, ResAdsReportsCount>(sql.as_str())
+        .fetch_one(pool)
+        .await;
+        let count = match count_rs {
+            Ok(v) => v.count,
+            Err(e) => {
+                println!("get_reports count {}", e);
+                0
+            }
+        };
+
+        if let Some(list) = list {
+            Some(ResGetReports {
+                list, total_number: count
+            })
+        } else {
+            None
+        }
+    }
+
+    pub async fn get_game_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
         let conds = self.get_report_query_conds(params);
         let list = self.query_release_reports(pool, params, &conds).await;
 

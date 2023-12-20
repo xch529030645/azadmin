@@ -122,14 +122,15 @@ pub async fn add_app_gallery(_: UserData, data: web::Data<AppState>, game_servic
 
 #[post("/azadmin/get_reports")]
 pub async fn get_reports(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
-    let p = if user_data.id == 4 {
-        let mut param = param.0;
-        param.package_name = Some("com.craftsman.go.huawei".to_string());
-        param
-    } else {
-        param.0
-    };
+    let p = param.0;
     let list = game_service.get_reports(&data.pool, &p).await;
+    return Results::done(&list.as_ref());
+}
+
+#[post("/azadmin/get_game_reports")]
+pub async fn get_game_reports(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryReports>) -> impl Responder {
+    let p = param.0;
+    let list = game_service.get_game_reports(&data.pool, &p).await;
     return Results::done(&list.as_ref());
 }
 
