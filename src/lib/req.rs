@@ -32,7 +32,7 @@ impl ReqQueryAdGroupReport {
             page_size,
             start_date,
             end_date,
-            time_line: "STAT_REPORTING_TIME".to_string(),
+            time_line: "STAT_REQUEST_TIME".to_string(),
             group_by:  vec!["COUNTRY".to_string(), "ADGROUP_ID".to_string()],
             is_abroad: true
         };
