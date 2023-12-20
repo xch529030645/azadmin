@@ -148,6 +148,30 @@ pub struct ResAdsReports {
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResAdsGameReports {
+    // pub id: i32,
+    pub app_id: String,
+    pub stat_datetime: Option<String>,
+    pub earnings: Option<f64>,
+    pub cost: f64,
+    pub active: i32,
+    pub iaa: f64,
+    pub first_day_iaa: Option<f64>,
+    pub app_name: Option<String>,
+    pub package_name: Option<String>,
+    pub duration: Option<i32>,
+    pub r1: Option<f32>,
+    pub remark: Option<String>,
+    pub reached_ad_requests: i64,
+    pub click_count: i64,
+    pub matched_reached_ad_requests: i64,
+    pub show_count: i64,
+    pub activityUsers: i32,
+    pub newUsers: i32
+
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResAdsReportsCount {
     pub count: i32
 }
