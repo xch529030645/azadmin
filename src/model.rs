@@ -172,7 +172,7 @@ pub struct ResAdsGameReports {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ResGetReports {
+pub struct ResGameGetReports {
     pub list: Vec<ResAdsGameReports>,
     pub total_number: i32,
 }
