@@ -382,7 +382,7 @@ impl GameService {
         };
         let mut sql = format!(
         "
-        SELECT t.*, t2.earnings, t2.reached_ad_requests, t2.click_count, t2.matched_reached_ad_requests, t2.show_count, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, SUM(a.cost) AS cost, CAST(SUM(a.install_count) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
+        SELECT t.*, t2.earnings, t2.reached_ad_requests, t2.click_count, t2.matched_reached_ad_requests, t2.show_count, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {}

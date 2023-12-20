@@ -166,6 +166,7 @@ pub async fn query_reports(advertiser_id: &String, access_token: &str, start_dat
                 // let at = v.json::<ResReports>().await;
                 match rs {
                     Ok(text) => {
+                        println!("{}", &text);
                         let at: Result<ResReports, serde_json::Error> = serde_json::from_str(&text);
                         if let Ok(at) = at {
                             ret = Some(at);
