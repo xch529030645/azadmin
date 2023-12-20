@@ -382,7 +382,7 @@ impl GameService {
         };
         let mut sql = format!(
         "
-        SELECT t.*, t2.*, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
+        SELECT t.*, t2.*, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, a.stat_datetime, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {}
@@ -401,7 +401,7 @@ impl GameService {
         //     sql += " GROUP BY a.stat_datetime, a.package_name, b.app_name, c.earnings"
         // }
         let mut group_by = [
-            "a.package_name", "b.app_name", "g.remark", "b.app_id", "e.appkey"
+            "a.package_name", "a.stat_datetime", "b.app_name", "g.remark", "b.app_id", "e.appkey"
         ].to_vec();
         if params.group_by_country {
             group_by.push("a.country");
