@@ -162,10 +162,10 @@ pub struct ResAdsGameReports {
     pub duration: Option<i32>,
     pub r1: Option<f32>,
     pub remark: Option<String>,
-    pub reached_ad_requests: i64,
-    pub click_count: i64,
-    pub matched_reached_ad_requests: i64,
-    pub show_count: i64,
+    pub reached_ad_requests: f64,
+    pub click_count: f64,
+    pub matched_reached_ad_requests: f64,
+    pub show_count: f64,
     pub activityUsers: i32,
     pub newUsers: i32
 
