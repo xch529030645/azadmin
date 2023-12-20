@@ -1433,7 +1433,7 @@ impl GameService {
                 if v.rows_affected() == 0 {
                     let rs = sqlx::query("INSERT INTO ads_daily_earnings_reports
                     (`key`, app_id, stat_datetime, earnings, reached_ad_requests, click_count, matched_reached_ad_requests, show_count)
-                    VALUES(?,?,?,?);
+                    VALUES(?,?,?,?,?,?,?,?);
                     ")
                         .bind(&key)
                         .bind(&vo.app_id)
