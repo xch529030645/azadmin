@@ -450,11 +450,11 @@ impl GameService {
         // let query_date = &params.start_date.unwrap_or(Local::now().format("%Y-%m-%d").to_string());
 
         sql += format!(") t 
-        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id, CAST(SUM(reached_ad_requests) as SIGNED) as reached_ad_requests, CAST(SUM(click_count) as SIGNED) as click_count, CAST(SUM(matched_reached_ad_requests) as SIGNED) as matched_reached_ad_requests, CAST(SUM(show_count) as SIGNED) as show_count FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
+        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id, CAST(SUM(reached_ad_requests) as SIGNED) as reached_ad_requests, CAST(SUM(click_count) as SIGNED) as click_count, CAST(SUM(matched_reached_ad_requests) as SIGNED) as matched_reached_ad_requests, CAST(SUM(show_count) as SIGNED) as show_count FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id, stat_datetime ) t2
         ON t.app_id = t2.app_id
         left join um_app_daily_data uadd on t.appkey=uadd.appkey and t.stat_datetime=uadd.`date`
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
-        // println!("query_game_release_reports {}", &sql);
+        println!("query_game_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsGameReports>(sql.as_str())
         .fetch_all(pool)
