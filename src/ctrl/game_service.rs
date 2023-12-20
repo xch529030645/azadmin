@@ -458,7 +458,7 @@ impl GameService {
         ON t.app_id = t2.app_id
         left join um_app_daily_data uadd on t.appkey=uadd.appkey and {}=uadd.`date`
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), query_date, order_prop, order, params.page * params.len, params.len).as_str();
-        // println!("query_release_reports {}", &sql);
+        println!("query_game_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsReports>(sql.as_str())
         .fetch_all(pool)
@@ -466,7 +466,7 @@ impl GameService {
         match rs {
             Ok(v) => Some(v),
             Err(e) => {
-                println!("get_reports err {}", &sql);
+                println!("query_game_release_reports err {}", &sql);
                 None
             }
         }
