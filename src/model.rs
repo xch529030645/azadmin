@@ -162,17 +162,17 @@ pub struct ResAdsGameReports {
     pub duration: Option<i32>,
     pub r1: Option<f32>,
     pub remark: Option<String>,
-    pub reached_ad_requests: f64,
-    pub click_count: f64,
-    pub matched_reached_ad_requests: f64,
-    pub show_count: f64,
+    pub reached_ad_requests: i32,
+    pub click_count: i32,
+    pub matched_reached_ad_requests: i32,
+    pub show_count: i32,
     pub activityUsers: i32,
     pub newUsers: i32
 
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ResGameGetReports {
+pub struct ResGetReports {
     pub list: Vec<ResAdsGameReports>,
     pub total_number: i32,
 }
