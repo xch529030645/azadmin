@@ -440,13 +440,9 @@ impl GameService {
 
 
         let mut earngin_conds = vec![];
-        let today = Local::now().format("%Y-%m-%d").to_string();
-        let query_date = if let Some(start_date) = &params.start_date {
+        if let Some(start_date) = &params.start_date {
             earngin_conds.push(format!("stat_datetime>='{}'", start_date));
-            start_date
-        } else {
-            &today
-        };
+        }
         if let Some(end_date) = &params.end_date {
             earngin_conds.push(format!("stat_datetime<='{}'", end_date));
         }
@@ -456,8 +452,8 @@ impl GameService {
         sql += format!(") t 
         LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id, SUM(reached_ad_requests) as reached_ad_requests, SUM(click_count) as click_count, SUM(matched_reached_ad_requests) as matched_reached_ad_requests, SUM(show_count) as show_count FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
         ON t.app_id = t2.app_id
-        left join um_app_daily_data uadd on t.appkey=uadd.appkey and '{}'=uadd.`date`
-        ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), query_date, order_prop, order, params.page * params.len, params.len).as_str();
+        left join um_app_daily_data uadd on t.appkey=uadd.appkey and t.stat_datetime=uadd.`date`
+        ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
         println!("query_game_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsGameReports>(sql.as_str())
@@ -466,7 +462,7 @@ impl GameService {
         match rs {
             Ok(v) => Some(v),
             Err(e) => {
-                println!("query_game_release_reports err {}", &sql);
+                println!("query_game_release_reports err {}", &e);
                 None
             }
         }
