@@ -382,7 +382,7 @@ impl GameService {
         };
         let mut sql = format!(
         "
-        SELECT t.*, t2.*, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, a.stat_datetime, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
+        SELECT t.*, t2.*, uadd.activityUsers, uadd.newUsers FROM (SELECT b.app_id, a.package_name, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, SUM(a.cost) AS cost, CAST(SUM(a.active) AS SIGNED) as active, SUM(a.iaa) AS iaa, {}, SUM(d.iaa) as first_day_iaa, CAST(AVG(f.duration) AS SIGNED) AS duration, AVG(f.r1) AS r1, g.remark, e.appkey
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {}
@@ -454,7 +454,7 @@ impl GameService {
         ON t.app_id = t2.app_id
         left join um_app_daily_data uadd on t.appkey=uadd.appkey and t.stat_datetime=uadd.`date`
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
-        println!("query_game_release_reports {}", &sql);
+        // println!("query_game_release_reports {}", &sql);
 
         let rs = sqlx::query_as::<_, ResAdsGameReports>(sql.as_str())
         .fetch_all(pool)
