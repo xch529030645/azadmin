@@ -320,7 +320,7 @@ impl GameService {
         }
     }
 
-    pub async fn get_game_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGetReports> {
+    pub async fn get_game_reports(&self, pool: &Pool<MySql>, params: &ReqQueryReports) -> Option<ResGameGetReports> {
         let conds = self.get_report_query_conds(params);
         let list = self.query_game_release_reports(pool, params, &conds).await;
 
