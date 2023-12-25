@@ -106,6 +106,11 @@ pub async fn delete_app_group(user_data: UserData, data: web::Data<AppState>, ga
     return Results::err(err);
 }
 
+#[post("/azadmin/testtest")]
+pub async fn testtest(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
+    let err = game_service.testtest(&data.pool).await;
+    return Results::err(err);
+}
 
 
 #[post("/azadmin/get_app_gallery")]

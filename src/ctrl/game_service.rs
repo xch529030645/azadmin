@@ -113,6 +113,11 @@ impl GameService {
     pub async fn delete_app_group(&self, pool: &Pool<MySql>, id: i32) -> i32 {
         game_repository::delete_app_group(pool, id).await
     }
+
+    pub async fn testtest(&self, pool: &Pool<MySql>) -> i32 {
+        
+        0
+    }
     
     pub async fn get_app_gallery(&self, pool: &Pool<MySql>) -> Option<Vec<AppGallery>> {
         let rs = sqlx::query_as::<_, AppGallery>("SELECT * FROM ads_account")
@@ -469,15 +474,17 @@ impl GameService {
     }
 
     pub async fn get_overview(&self, pool: &Pool<MySql>, params: &ReqQueryOverview) -> Option<Vec<ResOverview>> {
+        let yesterday = Local::now().checked_sub_days(Days::new(1)).unwrap().format("%Y-%m-%d").to_string();
         let rs = sqlx::query_as::<_, ResOverview>("SELECT a.cost, DATE_FORMAT(a.stat_datetime, '%Y-%m-%d') as stat_datetime, b.earnings FROM (
             SELECT SUM(cost) as cost, stat_datetime FROM ads_advertiser_daily_release_reports 
-            WHERE record_datetime = stat_datetime and stat_datetime BETWEEN ? AND ? AND country ='ALL' group by stat_datetime
+            WHERE record_datetime = ? and stat_datetime BETWEEN ? AND ? AND country ='ALL' group by stat_datetime
             ) a 
             LEFT JOIN 
             (
             SELECT SUM(earnings) AS earnings, stat_datetime FROM ads_daily_earnings_reports WHERE stat_datetime BETWEEN ? AND ? GROUP BY stat_datetime
             ) b
             ON a.stat_datetime = b.stat_datetime;")
+        .bind(yesterday)
         .bind(&params.start_date)
         .bind(&params.end_date)
         .bind(&params.start_date)
