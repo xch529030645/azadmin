@@ -150,7 +150,7 @@ pub struct ResAdsReports {
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResAdsGameReports {
     // pub id: i32,
-    pub app_id: String,
+    pub app_id: Option<String>,
     pub stat_datetime: Option<String>,
     pub earnings: Option<f64>,
     pub cost: f64,
