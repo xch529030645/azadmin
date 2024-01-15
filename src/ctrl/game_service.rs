@@ -1419,7 +1419,7 @@ impl GameService {
     }
 
     async fn insert_or_update_daily_report(&self, pool: &Pool<MySql>, vo: &AdsDailyReport) {
-        let key = format!("{}-{}", &vo.app_id, &vo.stat_datetime);
+        let key = format!("{}-{}-{}", &vo.app_id, &vo.stat_datetime, &vo.ad_type);
         let rs = sqlx::query("UPDATE ads_daily_earnings_reports
         SET earnings=?, reached_ad_requests=?, click_count=?, matched_reached_ad_requests=?, show_count=?, ad_type=? WHERE `key`=?")
             .bind(&vo.earnings)
