@@ -2010,8 +2010,8 @@ impl GameService {
         game_repository::save_campaigns(pool, campaigns, advertiser_id).await;
     }
 
-    pub async fn get_game_ad_type_reports(&self, pool: &Pool<MySql>, params: &ReqQueryAdTypeReports) -> Option<Vec<ResAdsGameReports>> {
-        let rs = sqlx::query_as::<_, ResAdsGameReports>("select * from ads_daily_earnings_reports where app_id = ? and stat_datetime = ? and ad_type != 'ALL'")
+    pub async fn get_game_ad_type_reports(&self, pool: &Pool<MySql>, params: &ReqQueryAdTypeReports) -> Option<Vec<ResAdsGameAdTypeReports>> {
+        let rs = sqlx::query_as::<_, ResAdsGameAdTypeReports>("select * from ads_daily_earnings_reports where app_id = ? and stat_datetime = ? and ad_type != 'ALL'")
         .bind(&params.app_id)
         .bind(&params.stat_datetime)
         .fetch_all(pool)

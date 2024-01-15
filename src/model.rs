@@ -155,7 +155,6 @@ pub struct ResAdsReports {
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct ResAdsGameReports {
-    // pub id: i32,
     pub app_id: Option<String>,
     pub stat_datetime: Option<String>,
     pub earnings: Option<f64>,
@@ -174,7 +173,20 @@ pub struct ResAdsGameReports {
     pub show_count: Option<i32>,
     pub activityUsers: Option<i32>,
     pub newUsers: Option<i32>
+}
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResAdsGameAdTypeReports {
+    pub id: Option<i32>,
+    pub key: Option<String>,
+    pub app_id: Option<String>,
+    pub stat_datetime: Option<String>,
+    pub earnings: Option<f64>,
+    pub reached_ad_requests: Option<i32>,
+    pub click_count: Option<i32>,
+    pub matched_reached_ad_requests: Option<i32>,
+    pub show_count: Option<i32>,
+    pub ad_type: Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
