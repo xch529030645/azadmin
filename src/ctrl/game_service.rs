@@ -450,6 +450,7 @@ impl GameService {
         if let Some(end_date) = &params.end_date {
             earngin_conds.push(format!("stat_datetime<='{}'", end_date));
         }
+        earngin_conds.push("ad_type='ALL'".to_string());
 
         // let query_date = &params.start_date.unwrap_or(Local::now().format("%Y-%m-%d").to_string());
 
@@ -529,7 +530,7 @@ impl GameService {
         SELECT SUM(a.cost) as cost, CAST(SUM(a.active) as SIGNED) as active, SUM(a.iaa) as iaa, SUM(c.earnings) as earnings, SUM(d.iaa) as first_day_iaa 
         FROM {} a 
         LEFT JOIN apps b ON a.package_name = b.package_name 
-        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime 
+        LEFT JOIN ads_daily_earnings_reports c ON b.app_id = c.app_id AND c.stat_datetime=a.stat_datetime AND ad_type='ALL'
         LEFT JOIN {} d ON a.package_name = d.package_name AND a.stat_datetime = d.stat_datetime and d.record_datetime = a.stat_datetime and a.country=d.country and a.advertiser_id=d.advertiser_id {} 
         ",
         table, table, left_join_cond);
@@ -1404,6 +1405,26 @@ impl GameService {
             CAST(SUM(matched_reached_ad_requests) AS SIGNED) as matched_reached_ad_requests,
             CAST(SUM(show_count) AS SIGNED) as show_count 
             from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime,ad_type;")
+            .bind(&date)
+            .fetch_all(pool).await;
+        match rs {
+            Ok(list) => {
+                for vo in list {
+                    self.insert_or_update_daily_report(pool, &vo).await;
+                }
+            },
+            Err(e) => {
+                println!("calc_ads_daily_reports err : {}", e);
+            }
+        }
+
+        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, 'ALL' as ad_type
+            SUM(earnings) as earnings, 
+            CAST(SUM(reached_ad_requests) AS SIGNED) as reached_ad_requests,
+            CAST(SUM(click_count) AS SIGNED) as click_count,
+            CAST(SUM(matched_reached_ad_requests) AS SIGNED) as matched_reached_ad_requests,
+            CAST(SUM(show_count) AS SIGNED) as show_count 
+            from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime;")
             .bind(&date)
             .fetch_all(pool).await;
         match rs {
