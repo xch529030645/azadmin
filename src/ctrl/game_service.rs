@@ -1418,7 +1418,7 @@ impl GameService {
             }
         }
 
-        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, 'ALL' as ad_type
+        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, 'ALL' as ad_type,
             SUM(earnings) as earnings, 
             CAST(SUM(reached_ad_requests) AS SIGNED) as reached_ad_requests,
             CAST(SUM(click_count) AS SIGNED) as click_count,
