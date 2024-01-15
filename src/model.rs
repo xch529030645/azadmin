@@ -180,7 +180,6 @@ pub struct ResAdsGameAdTypeReports {
     pub id: Option<i32>,
     pub key: Option<String>,
     pub app_id: Option<String>,
-    pub stat_datetime: Option<String>,
     pub earnings: Option<f64>,
     pub reached_ad_requests: Option<i32>,
     pub click_count: Option<i32>,
