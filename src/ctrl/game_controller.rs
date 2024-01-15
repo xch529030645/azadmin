@@ -139,6 +139,14 @@ pub async fn get_game_reports(user_data: UserData, data: web::Data<AppState>, ga
     return Results::done(&list.as_ref());
 }
 
+#[post("/azadmin/get_game_ad_type_reports")]
+pub async fn get_game_ad_type_reports(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryAdTypeReports>) -> impl Responder {
+    let p = param.0;
+    let list = game_service.get_game_ad_type_reports(&data.pool, &p).await;
+    return Results::done(&list.as_ref());
+}
+
+
 #[post("/azadmin/get_earnings_reports")]
 pub async fn get_earnings_reports(_: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqQueryEarningReports>) -> impl Responder {
     let list = game_service.get_earnings_reports(&data.pool, &param.0).await;

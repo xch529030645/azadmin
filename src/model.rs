@@ -58,6 +58,12 @@ pub struct ReqQueryReports {
 }
 
 #[derive(Serialize,Deserialize)]
+pub struct ReqQueryAdTypeReports {
+    pub app_id: Option<String>,
+    pub stat_datetime: Option<String>
+}
+
+#[derive(Serialize,Deserialize)]
 pub struct ReqQueryOverview {
     pub start_date: String,
     pub end_date: String
