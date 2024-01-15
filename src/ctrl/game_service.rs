@@ -395,7 +395,6 @@ impl GameService {
         LEFT JOIN um_retention f ON e.appkey = f.appkey AND f.date=a.stat_datetime 
         LEFT JOIN ads_account g ON b.client_id=g.client_id 
         ", app_name_format, table, table, left_join_cond);
-        
 
         if !conds.is_empty() {
             sql += format!(" WHERE {}", conds.join(" AND ")).as_str();
@@ -1398,13 +1397,13 @@ impl GameService {
     }
 
     async fn calc_ads_daily_reports(&self, pool: &Pool<MySql>, date: &String) {
-        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, 
+        let rs = sqlx::query_as::<_, AdsDailyReport>("SELECT app_id, stat_datetime, ad_type,
             SUM(earnings) as earnings, 
             CAST(SUM(reached_ad_requests) AS SIGNED) as reached_ad_requests,
             CAST(SUM(click_count) AS SIGNED) as click_count,
             CAST(SUM(matched_reached_ad_requests) AS SIGNED) as matched_reached_ad_requests,
             CAST(SUM(show_count) AS SIGNED) as show_count 
-            from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime;")
+            from ads_earnings WHERE stat_datetime=? GROUP BY app_id,stat_datetime,ad_type;")
             .bind(&date)
             .fetch_all(pool).await;
         match rs {
@@ -1422,12 +1421,13 @@ impl GameService {
     async fn insert_or_update_daily_report(&self, pool: &Pool<MySql>, vo: &AdsDailyReport) {
         let key = format!("{}-{}", &vo.app_id, &vo.stat_datetime);
         let rs = sqlx::query("UPDATE ads_daily_earnings_reports
-        SET earnings=?, reached_ad_requests=?, click_count=?, matched_reached_ad_requests=?, show_count=? WHERE `key`=?")
+        SET earnings=?, reached_ad_requests=?, click_count=?, matched_reached_ad_requests=?, show_count=?, ad_type=? WHERE `key`=?")
             .bind(&vo.earnings)
             .bind(&vo.reached_ad_requests)
             .bind(&vo.click_count)
             .bind(&vo.matched_reached_ad_requests)
             .bind(&vo.show_count)
+            .bind(&vo.ad_type)
             .bind(&key)
             .execute(pool).await;
 
@@ -1435,8 +1435,8 @@ impl GameService {
             Ok(v) => {
                 if v.rows_affected() == 0 {
                     let rs = sqlx::query("INSERT INTO ads_daily_earnings_reports
-                    (`key`, app_id, stat_datetime, earnings, reached_ad_requests, click_count, matched_reached_ad_requests, show_count)
-                    VALUES(?,?,?,?,?,?,?,?);
+                    (`key`, app_id, stat_datetime, earnings, reached_ad_requests, click_count, matched_reached_ad_requests, show_count, ad_type)
+                    VALUES(?,?,?,?,?,?,?,?,?);
                     ")
                         .bind(&key)
                         .bind(&vo.app_id)
@@ -1446,6 +1446,7 @@ impl GameService {
                         .bind(&vo.click_count)
                         .bind(&vo.matched_reached_ad_requests)
                         .bind(&vo.show_count)
+                        .bind(&vo.ad_type)
                         .execute(pool).await;
                     
                     match rs {

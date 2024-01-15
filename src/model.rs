@@ -279,6 +279,7 @@ pub struct ResGetReports {
 pub struct AdsDailyReport {
     pub app_id: String,
     pub stat_datetime: String,
+    pub ad_type: String,
     pub earnings: f64,
     pub reached_ad_requests: i32,
     pub click_count: i32,
