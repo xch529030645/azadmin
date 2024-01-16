@@ -421,11 +421,11 @@ impl GameService {
                     "active" => "t.active",
                     "iaa" => "t.iaa",
                     "earnings" => "t2.earnings",
-                    _ => "t.cost"
+                    _ => "t.stat_datetime"
                 }
             },
             None => {
-                "t.cost"
+                "t.stat_datetime"
             }
         };
 
