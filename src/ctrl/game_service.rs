@@ -2026,7 +2026,7 @@ impl GameService {
     }
     
     pub async fn get_roas_period_data(&self, pool: &Pool<MySql>, params: &ReqGetPeroidRoas) -> Option<Vec<ResPeriodRoas>> {
-        let rs = sqlx::query_as::<_, ResPeriodRoas>("select id, advertiser_id, package_name, date_format(`time`, "%Y-%m-%d %H:%i") as `time`, `date`, cost, iaa from ads_period_release_reports where package_name = ? and date between ? and ?")
+        let rs = sqlx::query_as::<_, ResPeriodRoas>("select id, advertiser_id, package_name, date_format(`time`, '%Y-%m-%d %H:%i') as `time`, `date`, cost, iaa from ads_period_release_reports where package_name = ? and date between ? and ?")
         .bind(&params.package_name)
         .bind(&params.date_start)
         .bind(&params.date_end)
