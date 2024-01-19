@@ -199,6 +199,20 @@ pub struct ResAdsReportsCount {
     pub count: i32
 }
 
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResPeriodRoas {
+    pub id: Option<i32>,
+    pub advertiser_id: Option<String>,
+    pub package_name: Option<String>,
+    pub time: Option<String>,
+    pub date: Option<String>,
+    pub cost: Option<f64>,
+    pub iaa: Option<f64>
+}
+
+
+
 #[derive(sqlx::FromRow, Deserialize, Serialize)]
 pub struct AdminInfo {
     pub id: i32,
@@ -615,6 +629,12 @@ pub struct ReqDelCollection {
     pub id: i32
 }
 
+#[derive(Serialize,Deserialize)]
+pub struct ReqGetPeroidRoas {
+    pub package_name: String,
+    pub date_start: String,
+    pub date_end: String,
+}
 
 
 #[derive(Serialize,Deserialize)]

@@ -106,6 +106,14 @@ pub async fn delete_app_group(user_data: UserData, data: web::Data<AppState>, ga
     return Results::err(err);
 }
 
+#[post("/azadmin/get_roas_period_data")]
+pub async fn get_roas_period_data(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>, param: web::Json<ReqGetPeroidRoas>) -> impl Responder {
+    let list = game_service.get_roas_period_data(&data.pool, &param.0).await;
+    return Results::done(&list.as_ref());
+}
+
+
+
 #[post("/azadmin/testtest")]
 pub async fn testtest(user_data: UserData, data: web::Data<AppState>, game_service: web::Data<GameService>) -> impl Responder {
     let err = game_service.testtest(&data.pool).await;
@@ -357,4 +365,8 @@ pub async fn restart_mysql(pool: &Pool<MySql>, game_service:&GameService) {
     }
 
     game_service.check_memory();
+}
+
+pub async fn solid_peroid_reports(pool: &Pool<MySql>) {
+
 }

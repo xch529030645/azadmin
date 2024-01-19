@@ -183,6 +183,7 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::add_app_group)
             .service(game_controller::get_app_group)
             .service(game_controller::delete_app_group)
+            .service(game_controller::get_roas_period_data)
             .service(game_controller::testtest)
 
             .service(promotion_controller::create_audience_package)
