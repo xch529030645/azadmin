@@ -1175,7 +1175,7 @@ pub async fn query_assets(pool: &Pool<MySql>, req: &FormQueryAssets) -> Option<V
 pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<CollectionTask>> {
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    let rs = sqlx::query_as::<_, CollectionTask>("SELECT a.* FROM collection_tasks a LEFT JOIN collection_tasks_records b ON a.id=b.task_id AND b.`date` =? WHERE ISNULL(b.task_id) AND a.enabled = 1")
+    let rs = sqlx::query_as::<_, CollectionTask>("SELECT a.* FROM collection_tasks a LEFT JOIN collection_tasks_records b ON a.id=b.task_id AND b.`date` =? WHERE (ISNULL(b.task_id) or isnull(a.check_hour)) AND a.enabled = 1")
         .bind(today)
         .fetch_all(pool)
         .await;
@@ -1193,7 +1193,7 @@ pub async fn get_uncollection_tasks(pool: &Pool<MySql>) -> Option<Vec<Collection
 pub async fn get_today_campaign_stat(pool: &Pool<MySql>) -> Option<Vec<CampaignStat>> {
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    let rs = sqlx::query_as::<_, CampaignStat>("SELECT SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, a.campaign_id, a.advertiser_id  from reports a WHERE a.stat_datetime =? group by a.campaign_id, a.advertiser_id")
+    let rs = sqlx::query_as::<_, CampaignStat>("SELECT a.package_name, SUM(a.attribution_income_iaa) as iaa, sum(a.cost) as cost, cast(sum(a.active_count) as SIGNED) as active_count, a.campaign_id, a.advertiser_id  from reports a WHERE a.stat_datetime =? group by a.package_name, a.campaign_id, a.advertiser_id")
         .bind(today)
         .fetch_all(pool)
         .await;
@@ -1240,14 +1240,15 @@ pub async fn update_campaign_status(pool: &Pool<MySql>, campaign_id: &str, statu
     }
 }
 
-pub async fn add_collection_task_execute_records(pool: &Pool<MySql>, today: &String, task_id: i32, operation: i32, campaign_id: &str, cost: f64, iaa: f64) {
-    let rs = sqlx::query("INSERT INTO collection_task_execute_records (`date`, `task_id`, operation, campaign_id, cost, iaa) VALUES (?,?,?,?,?,?)")
+pub async fn add_collection_task_execute_records(pool: &Pool<MySql>, today: &String, task_id: i32, operation: i32, campaign_id: &str, cost: f64, iaa: f64, active_count: i32) {
+    let rs = sqlx::query("INSERT INTO collection_task_execute_records (`date`, `task_id`, operation, campaign_id, cost, iaa, active_count) VALUES (?,?,?,?,?,?,?)")
         .bind(today)
         .bind(task_id)
         .bind(operation)
         .bind(campaign_id)
         .bind(cost)
         .bind(iaa)
+        .bind(active_count)
         .execute(pool)
         .await;
     match rs {
@@ -1290,20 +1291,57 @@ pub async fn update_collection_tasks(pool: &Pool<MySql>, param: &FormUpdateColle
     }
 }
 
-pub async fn get_collection_operations(pool: &Pool<MySql>, param: &FormCollectionId) -> Option<Vec<CollectionExecuteRecords>> {
-    let rs = sqlx::query_as::<_, CollectionExecuteRecords>("SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records WHERE task_id=? ORDER BY id DESC")
-        .bind(param.task_id)
+pub async fn get_collection_operations(pool: &Pool<MySql>, param: &FormCollectionId) -> Option<ResCollectionExecuteRecords> {
+    let sql = if let (Some(page), Some(len)) = (param.page, param.len) {
+        if let Some(task_id) = param.task_id {
+            format!("SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records WHERE task_id={} ORDER BY id DESC LIMIT {}, {}", task_id, page*len, len)
+        } else {
+            format!("SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records ORDER BY id DESC LIMIT {}, {}", page*len, len)
+        }
+    } else {
+        if let Some(task_id) = param.task_id {
+            format!("SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records WHERE task_id={} ORDER BY id DESC", task_id)
+        } else {
+            "SELECT *, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time FROM collection_task_execute_records ORDER BY id DESC".to_string()
+        }
+    };
+    
+    let rs = sqlx::query_as::<_, CollectionExecuteRecords>(&sql)
         .fetch_all(pool)
         .await;
-    match rs {
+    let list = match rs {
         Ok(v) => {
             Some(v)
         },
         Err(e) => {
-            println!("get_collection_operations: {}", e);
+            println!("get_collection_operations err: {}", e);
             None
         }
-    }
+    };
+
+    let sql = if let Some(task_id) = param.task_id {
+        format!("SELECT COUNT(id) AS `count` FROM collection_task_execute_records WHERE task_id={}", task_id)
+    } else {
+        "SELECT COUNT(id) AS `count` FROM collection_task_execute_records".to_string()
+    };
+
+    let rs = sqlx::query_as::<_, ResAdsReportsCount>(&sql)
+        .fetch_one(pool)
+        .await;
+    let count = match rs {
+        Ok(v) => {
+            v.count
+        },
+        Err(e) => {
+            println!("get_collection_operations count err: {}", e);
+            0
+        }
+    };
+
+    Some(ResCollectionExecuteRecords {
+        count: count,
+        list: list
+    })
 }
 
 pub async fn update_collection_advertisers(pool: &Pool<MySql>, param: &FormUpdateCollectionAdvertisers) -> i32 {
@@ -1605,3 +1643,16 @@ pub async fn save_umeng_today_yesterday_data(pool: &Pool<MySql>, appkey: &str, r
     }
 }
 
+pub async fn get_budget_plans(pool: &Pool<MySql>) -> Option<Vec<ResBudgetPlan>> {
+    let rs = sqlx::query_as::<_, ResBudgetPlan>("SELECT *, b.app_name, b.package_name FROM collection_budget_tasks a LEFT JOIN apps b ON a.pid=b.id")
+        .fetch_all(pool).await;
+    match rs {
+        Ok(v) => {
+            Some(v)
+        },
+        Err(e) => {
+            println!("get_budget_plans err: {}", e);
+            None
+        }
+    }
+}

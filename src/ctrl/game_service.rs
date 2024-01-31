@@ -1,6 +1,7 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, collections::{HashMap, HashSet}, ops::Sub, sync::{Arc, Mutex}, cmp::min, process::Command};
+use std::{cmp::min, collections::{HashMap, HashSet}, future, ops::Sub, process::Command, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}};
 use chrono::{Local, DateTime, Days, Timelike};
 use sqlx::{Pool, MySql, Row};
+use ssh_rs::new;
 
 use crate::{lib::{server_api, req::{AuthorizationCode}, response::*, umeng_api}, model::*, auth, user_data::UserData};
 
@@ -269,7 +270,7 @@ impl GameService {
         }
 
         sql += format!(") t 
-        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id FROM ads_daily_earnings_reports WHERE {} GROUP BY app_id ) t2
+        LEFT JOIN ( SELECT SUM(earnings) AS earnings, app_id FROM ads_daily_earnings_reports WHERE {} AND ad_type='ALL' GROUP BY app_id ) t2
         ON t.app_id = t2.app_id
         ORDER BY {} {} LIMIT {}, {}", earngin_conds.join(" AND "), order_prop, order, params.page * params.len, params.len).as_str();
         // println!("query_release_reports {}", &sql);
@@ -559,9 +560,9 @@ impl GameService {
             }
 
             if let Some(package_name) = &params.package_name {
-                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id WHERE FIND_IN_SET(a.package_name,'{}') AND {} ) t2 ON 1", conds.join(" AND "), package_name, earngin_conds.join(" AND ")).as_str();
+                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id AND b.ad_type='ALL' WHERE FIND_IN_SET(a.package_name,'{}') AND {} ) t2 ON 1", conds.join(" AND "), package_name, earngin_conds.join(" AND ")).as_str();
             } else {
-                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id WHERE {} ) t2 ON 1", conds.join(" AND "), earngin_conds.join(" AND ")).as_str();
+                sql += format!(" WHERE {} ) t LEFT JOIN ( SELECT SUM(b.earnings) AS earnings FROM apps a LEFT JOIN ads_daily_earnings_reports b ON a.app_id = b.app_id AND b.ad_type='ALL' WHERE {} ) t2 ON 1", conds.join(" AND "), earngin_conds.join(" AND ")).as_str();
             }
         }
         // println!("{}", &sql);
@@ -1779,35 +1780,128 @@ impl GameService {
         }
     }
 
+    fn check_collection_task_time(&self, hour: i32, minute: i32, task: &CollectionTask) -> bool {
+        if let (Some(check_hour), Some(check_minute)) = (task.check_hour, task.check_minute) {
+            check_hour == hour && minute >= check_minute
+        } else {
+            true
+        }
+    }
+
+    async fn get_budget_plans(&self, pool: &Pool<MySql>) -> HashMap<String, ReqSaveBudgetPlan> {
+        let mut ret: HashMap<String, ReqSaveBudgetPlan> = HashMap::new();
+        let rs = game_repository::get_budget_plans(pool).await;
+        if let Some(items) = rs {
+            for item in items {
+                let vo: Result<ReqSaveBudgetPlan, serde_json::Error> = serde_json::from_str(&item.data);
+                if let Ok(plan) = vo {
+                    ret.insert(item.package_name, plan);
+                }
+            }
+        }
+        return ret;
+    }
+
     pub async fn check_collection_tasks(&self, pool: &Pool<MySql>) {
         println!("start check_collection_tasks");
-        let now = Local::now();
-        let today = now.format("%Y-%m-%d").to_string();
-        let hour = now.hour() as i32;
-        let minute = now.minute() as i32;
-
+        let plans = self.get_budget_plans(pool).await;
         let tasks = game_repository::get_uncollection_tasks(pool).await;
+
+        
+
+        if !plans.is_empty() || tasks.is_some() {
+            if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {
+                self.handle_collection_tasks(pool, &stats, tasks).await;
+                self.handle_budget_tasks(pool, &stats, plans).await;
+            }
+        }
+        
+        
+        println!("done check_collection_tasks");
+
+        // now.hour()
+        // now.minute()
+    }
+
+    fn time_to_seconds(&self, str: &str) -> i32 {
+        let ps: Vec<&str> = str.split(":").collect();
+        let min = ps[0].parse::<i32>().unwrap();
+        let sec = ps[1].parse::<i32>().unwrap();
+        min * 60 + sec
+    }
+
+    fn get_requirement(&self, requirements: Vec<BudgetRequirement>, seconds: i64) -> Option<BudgetRequirement> {
+        for req in requirements {
+            let from = self.time_to_seconds(&req.from) as i64;
+            let to = self.time_to_seconds(&req.to) as i64;
+            if seconds.ge(&from) && seconds.le(&to) {
+                return Some(req);
+            }
+        }
+        None
+    }
+
+    fn get_match_budget(&self, budgets: &Vec<BudgetIncrement>, cost: f64) -> Option<&BudgetIncrement> {
+        for budget in budgets {
+            let from_budget = budget.from_budget as f64;
+
+        }
+    }
+
+    async fn handle_budget_tasks(&self, pool: &Pool<MySql>, stats: &Vec<CampaignStat>, plans: HashMap<String, ReqSaveBudgetPlan>) {
+        // let now = Local::now();
+        // let hour = now.hour() as i32;
+        // let minute = now.minute() as i32;
+        let seconds = self.timestamp() / 1000 % 86400;
+
+        for stat in stats {
+            if let Some(plan) = plans.get(&stat.package_name) {
+                // plan
+                // plan.budgets
+                // stat.cost
+            }
+        }
+    }
+
+    async fn handle_collection_tasks(&self, pool: &Pool<MySql>, stats: &Vec<CampaignStat>, tasks: Option<Vec<CollectionTask>>) {
         if let Some(tasks) = tasks {
             if tasks.is_empty() {
                 println!("tasks empty");
                 return;
             }
-            if let Some(stats) = game_repository::get_today_campaign_stat(pool).await {
-                let mut shutdown_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
-                let mut resume_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
-                for task in &tasks {
-                    if let Some(advertisers) = &task.advertisers {
-                        if task.check_hour == hour && minute >= task.check_minute {
-                            for stat in &stats {
-                                if advertisers.contains(&stat.advertiser_id) {
-                                    let roas = stat.iaa / stat.cost;
-                                    let max_cost_check = if let Some(max_cost) = task.max_cost {
-                                        stat.cost <= max_cost
-                                    } else {
+
+            let now = Local::now();
+            let hour = now.hour() as i32;
+            let minute = now.minute() as i32;
+
+            
+            let mut shutdown_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
+            let mut resume_ids: Vec<(&CollectionTask, &CampaignStat)> = vec![];
+            for task in &tasks {
+                if let Some(advertisers) = &task.advertisers {
+                    if self.check_collection_task_time(hour, minute, task) {
+                        for stat in stats {
+                            if advertisers.contains(&stat.advertiser_id) {
+                                let is_active_pass = if let Some(active_count) = task.active_count {
+                                    if stat.active_count >= active_count {
                                         true
-                                    };
-                                    
-                                    if stat.cost.ge(&task.min_cost) && max_cost_check && self.check_roas_by_operator(task.operator, roas, task.require_roas) {
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    true
+                                };
+                                let roas = stat.iaa / stat.cost;
+                                let max_cost_check = if let Some(max_cost) = task.max_cost {
+                                    stat.cost <= max_cost
+                                } else {
+                                    true
+                                };
+
+                                let is_cost_pass = stat.cost.ge(&task.min_cost) && max_cost_check;
+
+                                if is_active_pass || is_cost_pass {
+                                    if self.check_roas_by_operator(task.operator, roas, task.require_roas) {
                                         if task.operation == 1 {
                                             println!("id: {}, cost {} >= {}, {} roas {} < {}", &task.id, &stat.cost, &task.min_cost, &stat.campaign_id, roas, task.require_roas);
                                             shutdown_ids.push((task, stat));
@@ -1815,29 +1909,23 @@ impl GameService {
                                             resume_ids.push((task, stat));
                                         }
                                     }
-                                    
                                 }
                             }
-                            game_repository::done_collection_task(pool, task.id).await;
                         }
+                        game_repository::done_collection_task(pool, task.id).await;
                     }
                 }
-                if !shutdown_ids.is_empty() {
-                    self.batch_shutdown(pool, &shutdown_ids).await;
-                }
-                if !resume_ids.is_empty() {
-                    self.batch_resume(pool, &resume_ids).await;
-                }
+            }
+            if !shutdown_ids.is_empty() {
+                self.batch_shutdown(pool, &shutdown_ids).await;
+            }
+            if !resume_ids.is_empty() {
+                self.batch_resume(pool, &resume_ids).await;
             }
             
         } else {
             println!("no check_collection_tasks");
         }
-        
-        println!("done check_collection_tasks");
-
-        // now.hour()
-        // now.minute()
     }
 
     async fn batch_shutdown(&self, pool: &Pool<MySql>, ids: &Vec<(&CollectionTask, &CampaignStat)>) {
@@ -1860,7 +1948,7 @@ impl GameService {
                     if suc {
                         println!("update_campaign_status success {}", &vo.1.advertiser_id);
                         // game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa, vo.1.active_count).await;
                     }
                 }
             }
@@ -1889,7 +1977,7 @@ impl GameService {
                     if suc {
                         println!("update_campaign_status success {}", &vo.1.advertiser_id);
                         // game_repository::update_campaign_status(pool, &vo.1.campaign_id, 1).await;
-                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa).await;
+                        game_repository::add_collection_task_execute_records(pool, &today, vo.0.id, vo.0.operation, &vo.1.campaign_id, vo.1.cost, vo.1.iaa, vo.1.active_count).await;
                     }
                 }
             }

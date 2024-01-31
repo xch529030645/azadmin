@@ -546,7 +546,9 @@ pub struct FormUpdateCollectionStatus {
 
 #[derive(Serialize,Deserialize)]
 pub struct FormCollectionId {
-    pub task_id: i32
+    pub task_id: Option<i32>,
+    pub page: Option<i32>,
+    pub len: Option<i32>,
 }
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
@@ -573,9 +575,10 @@ pub struct CollectionTask {
     pub remark: Option<String>,
     pub min_cost: f64,
     pub max_cost: Option<f64>,
+    pub active_count: Option<i32>,
     pub require_roas: f64,
-    pub check_hour: i32,
-    pub check_minute: i32,
+    pub check_hour: Option<i32>,
+    pub check_minute: Option<i32>,
     pub operation: i32,
     pub advertisers: Option<String>,
     pub operator: i32,
@@ -584,10 +587,12 @@ pub struct CollectionTask {
 
 #[derive(sqlx::FromRow, Serialize,Deserialize)]
 pub struct CampaignStat {
+    pub package_name: String,
     pub iaa: f64,
     pub cost: f64,
     pub campaign_id: String,
-    pub advertiser_id: String
+    pub advertiser_id: String,
+    pub active_count: i32
 }
 
 
@@ -601,8 +606,14 @@ pub struct CollectionExecuteRecords {
     pub create_time: String,
     pub cost: Option<f64>,
     pub iaa: Option<f64>,
+    pub active_count: Option<i32>,
 }
 
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResCollectionExecuteRecords {
+    pub count: i32,
+    pub list: Option<Vec<CollectionExecuteRecords>>,
+}
 
 #[derive(Serialize,Deserialize)]
 pub struct FormUpdateCollectionAdvertisers {
@@ -615,6 +626,7 @@ pub struct ReqSaveCollection {
     pub id: Option<i32>,
     pub min_cost: Option<f64>,
     pub max_cost: Option<f64>,
+    pub active_count: Option<i32>,
     pub check_hour: Option<i32>,
     pub check_minute: Option<i32>,
     pub operation: i32,
@@ -761,6 +773,41 @@ pub struct UmKey {
     pub appkey: String,
 }
 
+#[derive(Serialize,Deserialize)]
+pub struct BudgetIncrement {
+    pub add_budget: i32,
+    pub budget: i32,
+    pub from_budget: i32
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct BudgetRequirement {
+    pub from: String,
+    pub to: String,
+    pub roi: f64,
+    pub max_budget: i32
+}
+
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqSaveBudgetPlan {
+    pub pid: i32,
+    pub budgets: Vec<BudgetIncrement>,
+    pub requirements: Vec<BudgetRequirement>
+}
+
+#[derive(sqlx::FromRow, Serialize,Deserialize)]
+pub struct ResBudgetPlan {
+    pub pid: i32,
+    pub data: String,
+    pub app_name: String,
+    pub package_name: String
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct ReqDeleteBudgetPlan {
+    pub pid: i32
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct RspErr<T> {

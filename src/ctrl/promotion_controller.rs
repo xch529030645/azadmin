@@ -115,3 +115,21 @@ pub async fn get_ads(_: UserData, data: web::Data<AppState>, promotion_service: 
     let rs = promotion_service.get_ads(&data.pool, &param.0).await;
     return Results::done(&rs.as_ref());
 }
+
+#[post("/azadmin/save_budget_plan")]
+pub async fn save_budget_plan(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqSaveBudgetPlan>) -> impl Responder {
+    let err = promotion_service.save_budget_plan(&data.pool, &param.0).await;
+    return Results::err(err);
+}
+
+#[post("/azadmin/get_budget_plans")]
+pub async fn get_budget_plans(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>) -> impl Responder {
+    let rs = promotion_service.get_budget_plans(&data.pool).await;
+    return Results::done(&rs.as_ref());
+}
+
+#[post("/azadmin/delete_budget_plan")]
+pub async fn delete_budget_plan(_: UserData, data: web::Data<AppState>, promotion_service: web::Data<PromotionService>, param: web::Json<ReqDeleteBudgetPlan>) -> impl Responder {
+    let err = promotion_service.delete_budget_plan(&data.pool, &param.0).await;
+    return Results::err(err);
+}

@@ -392,7 +392,7 @@ impl PromotionService {
         game_repository::update_collection_advertisers(pool, param).await
     }
 
-    pub async fn get_collection_operations(&self, pool: &Pool<MySql>, param: &FormCollectionId) -> Option<Vec<CollectionExecuteRecords>> {
+    pub async fn get_collection_operations(&self, pool: &Pool<MySql>, param: &FormCollectionId) -> Option<ResCollectionExecuteRecords> {
         game_repository::get_collection_operations(pool, param).await
     }
 
@@ -548,11 +548,12 @@ impl PromotionService {
     pub async fn add_collection(&self, pool: &Pool<MySql>, params: &ReqSaveCollection) -> i32 {
         let rs = if let Some(id) = &params.id {
             sqlx::query("UPDATE azadmin.collection_tasks
-            SET remark=?, min_cost=?, max_cost=?, require_roas=?, check_hour=?, check_minute=?, operation=?, advertisers=?, operator=?
+            SET remark=?, min_cost=?, max_cost=?, active_count=?, require_roas=?, check_hour=?, check_minute=?, operation=?, advertisers=?, operator=?
             WHERE id=?;")
             .bind(&params.remark)
             .bind(&params.min_cost)
             .bind(&params.max_cost)
+            .bind(&params.active_count)
             .bind(&params.require_roas)
             .bind(&params.check_hour)
             .bind(&params.check_minute)
@@ -563,11 +564,12 @@ impl PromotionService {
             .execute(pool).await
         } else {
             sqlx::query("INSERT INTO azadmin.collection_tasks
-            (remark, min_cost, max_cost, require_roas, check_hour, check_minute, operation, advertisers, operator)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);")
+            (remark, min_cost, max_cost, active_count, require_roas, check_hour, check_minute, operation, advertisers, operator)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
             .bind(&params.remark)
             .bind(&params.min_cost)
             .bind(&params.max_cost)
+            .bind(&params.active_count)
             .bind(&params.require_roas)
             .bind(&params.check_hour)
             .bind(&params.check_minute)
@@ -717,4 +719,55 @@ impl PromotionService {
         }
     }
     
+    pub async fn save_budget_plan(&self, pool: &Pool<MySql>, params: &ReqSaveBudgetPlan) -> i32 {
+        for budget in &params.budgets {
+            if budget.add_budget == 0 {
+                return 1;
+            }
+        }
+        for time in &params.requirements {
+            if time.roi == 0_f64 {
+                return 2;
+            }
+        }
+        let data_result = serde_json::to_string(params);
+        if let Ok(data) = data_result {
+            let rs = sqlx::query("INSERT INTO collection_budget_tasks (pid, data) VALUES (?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")
+                .bind(params.pid)
+                .bind(data)
+                .execute(pool).await;
+            match rs {
+                Ok(v) => {
+                    0
+                },
+                Err(e) => {
+                    println!("save_budget_plan err: {}", e);
+                    3
+                }
+            }
+        } else {
+            4
+        }
+    }
+
+    pub async fn get_budget_plans(&self, pool: &Pool<MySql>) -> Option<Vec<ResBudgetPlan>> {
+        return game_repository::get_budget_plans(pool).await;
+        
+    }
+
+    pub async fn delete_budget_plan(&self, pool: &Pool<MySql>, params: &ReqDeleteBudgetPlan) -> i32 {
+        let rs = sqlx::query("DELETE FROM collection_budget_tasks WHERE pid=?")
+            .bind(params.pid)
+            .execute(pool).await;
+        match rs {
+            Ok(v) => {
+                0
+            },
+            Err(e) => {
+                println!("delete_budget_plan err: {}", e);
+                1
+            }
+        }
+    }
 }
+

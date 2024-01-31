@@ -44,6 +44,10 @@ fn get_mysql_connect_url(server_config: &ServerConfig) -> String {
 fn start_timer(server_config: ServerConfig) {
     actix_rt::spawn(async move {
         let pool = MySqlPoolOptions::new()
+            .after_connect(|conn, _meta| Box::pin(async move {
+                conn.execute("set time_zone = '+8:00';").await;
+                Ok(())
+            }))
             .max_connections(5)
             .connect(&get_mysql_connect_url(&server_config))
             .await.unwrap_or_else(|_| { std::process::exit(0) });
@@ -92,6 +96,10 @@ fn start_timer(server_config: ServerConfig) {
 fn start_ad_thread(server_config: ServerConfig) {
     actix_rt::spawn(async move {
         let pool = MySqlPoolOptions::new()
+        .after_connect(|conn, _meta| Box::pin(async move {
+            conn.execute("set time_zone = '+8:00';").await;
+            Ok(())
+        }))
         .max_connections(5)
         .connect(&get_mysql_connect_url(&server_config))
         .await.unwrap_or_else(|_| { std::process::exit(0) });
@@ -202,6 +210,9 @@ async fn main() -> std::io::Result<()> {
             .service(promotion_controller::add_collection)
             .service(promotion_controller::del_collection)
             .service(promotion_controller::get_ads)
+            .service(promotion_controller::save_budget_plan)
+            .service(promotion_controller::get_budget_plans)
+            .service(promotion_controller::delete_budget_plan)
             .service(test)
     })
     .bind(("0.0.0.0", 13491))?
